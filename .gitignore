@@ -1,0 +1,18 @@
+# Generated cluster config — contains secrets
+infrastructure/k3s/inventory.yml
+infrastructure/k3s/group_vars/all.yml
+infrastructure/k3s/.ansible_cache/
+
+# Kubeconfig — contains cluster credentials
+kubeconfig
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# mise
+.mise.local.toml

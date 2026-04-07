@@ -1,0 +1,78 @@
+---
+# =============================================================
+# add-node.yml — Interactively add a server or worker node
+#
+# Run via: just add-node
+# Prompts for node type and IP, then joins it to the cluster.
+# =============================================================
+
+- name: Collect new node details
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: node_type
+      prompt: "Node type — enter 'server' (control-plane) or 'worker'"
+      private: false
+
+    - name: node_ip
+      prompt: "Node IP address"
+      private: false
+
+  tasks:
+    - name: Validate node type
+      ansible.builtin.assert:
+        that: node_type in ['server', 'worker']
+        fail_msg: "node_type must be 'server' or 'worker', got: {{ node_type }}"
+
+    - name: Check SSH connectivity to new node
+      ansible.builtin.wait_for:
+        host: "{{ node_ip }}"
+        port: "{{ ansible_port | default(22) }}"
+        timeout: 15
+        msg: "Cannot reach {{ node_ip }} on port {{ ansible_port | default(22) }}"
+
+    - name: Join as worker
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['k3sup', 'join',
+             '--host',            node_ip,
+             '--user',            hostvars[groups['control_plane'][0]]['ansible_user'],
+             '--ssh-key',         ansible_ssh_private_key_file,
+             '--ssh-port',        ansible_port | default(22) | string,
+             '--server-host',     control_plane_vip if control_plane_vip else groups['control_plane'][0],
+             '--server-user',     hostvars[groups['control_plane'][0]]['ansible_user'],
+             '--server-ssh-key',  ansible_ssh_private_key_file,
+             '--k3s-extra-args',  '--token ' + k3s_token + ' ' + extra_agent_args]
+            + (['--k3s-version', k3s_version] if k3s_version else [])
+          }}
+      when: node_type == 'worker'
+
+    - name: Join as additional control-plane server
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['k3sup', 'join',
+             '--host',            node_ip,
+             '--user',            hostvars[groups['control_plane'][0]]['ansible_user'],
+             '--ssh-key',         ansible_ssh_private_key_file,
+             '--ssh-port',        ansible_port | default(22) | string,
+             '--server-host',     groups['control_plane'][0],
+             '--server-user',     hostvars[groups['control_plane'][0]]['ansible_user'],
+             '--server-ssh-key',  ansible_ssh_private_key_file,
+             '--k3s-extra-args',
+               '--token '         + k3s_token +
+               ' --tls-san '      + (control_plane_vip if control_plane_vip else groups['control_plane'][0]) +
+               ' '                + extra_server_args,
+             '--server']
+            + (['--k3s-version', k3s_version] if k3s_version else [])
+          }}
+      when: node_type == 'server'
+
+    - name: Remind to update inventory
+      ansible.builtin.debug:
+        msg: >-
+          Node {{ node_ip }} joined as {{ node_type }}.
+          Add it to infrastructure/k3s/inventory.yml under
+          {{ 'control_plane' if node_type == 'server' else 'workers' }}
+          to make it permanent.

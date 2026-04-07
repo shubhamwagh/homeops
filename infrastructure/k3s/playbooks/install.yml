@@ -1,0 +1,149 @@
+---
+# =============================================================
+# install.yml — Provision k3s cluster via k3sup
+#
+# Groups (from inventory.yml):
+#   control_plane  — first host = init node, rest join as servers
+#   workers        — join as k3s agents
+# =============================================================
+
+# ── 1. Bootstrap init control-plane ──────────────────────────
+- name: Bootstrap init control-plane node
+  hosts: control_plane[0]
+  gather_facts: false
+  tasks:
+    - name: Check if k3s is already running
+      ansible.builtin.command: systemctl is-active k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: false
+      delegate_to: localhost
+
+    - name: Install k3s on init node via k3sup
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['k3sup', 'install',
+             '--host',          inventory_hostname,
+             '--user',          ansible_user,
+             '--ssh-key',       ansible_ssh_private_key_file,
+             '--ssh-port',      ansible_port | string,
+             '--k3s-extra-args',
+               '--cluster-init --token ' + k3s_token +
+               ' --tls-san '    + (control_plane_vip if control_plane_vip else inventory_hostname) +
+               ' '              + extra_server_args,
+             '--local-path',    kubeconfig_output,
+             '--context',       cluster_name,
+             '--merge']
+            + (['--k3s-version', k3s_version] if k3s_version else [])
+          }}
+      delegate_to: localhost
+      when: k3s_status.rc != 0
+
+
+# ── 2. Join additional control-plane nodes ────────────────────
+- name: Join additional control-plane nodes
+  hosts: control_plane[1:]
+  gather_facts: false
+  serial: 1                        # one at a time to avoid split-brain
+  vars:
+    init_node: "{{ groups['control_plane'][0] }}"
+  tasks:
+    - name: Check if k3s is already running
+      ansible.builtin.command: systemctl is-active k3s
+      register: k3s_status
+      changed_when: false
+      failed_when: false
+      delegate_to: localhost
+
+    - name: Join as additional control-plane via k3sup
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['k3sup', 'join',
+             '--host',            inventory_hostname,
+             '--user',            ansible_user,
+             '--ssh-key',         ansible_ssh_private_key_file,
+             '--ssh-port',        ansible_port | string,
+             '--server-host',     init_node,
+             '--server-user',     hostvars[init_node]['ansible_user'],
+             '--k3s-extra-args',
+               '--token '         + k3s_token +
+               ' --tls-san '      + (control_plane_vip if control_plane_vip else init_node) +
+               ' '                + extra_server_args,
+             '--server']
+            + (['--k3s-version', k3s_version] if k3s_version else [])
+          }}
+      delegate_to: localhost
+      when: k3s_status.rc != 0
+
+
+# ── 3. Join worker nodes ──────────────────────────────────────
+- name: Join worker nodes
+  hosts: workers
+  gather_facts: false
+  vars:
+    server_addr: "{{ control_plane_vip if control_plane_vip else groups['control_plane'][0] }}"
+  tasks:
+    - name: Check if k3s-agent is already running
+      ansible.builtin.command: systemctl is-active k3s-agent
+      register: agent_status
+      changed_when: false
+      failed_when: false
+      delegate_to: localhost
+
+    - name: Join as worker via k3sup
+      ansible.builtin.command:
+        argv: >-
+          {{
+            ['k3sup', 'join',
+             '--host',            inventory_hostname,
+             '--user',            ansible_user,
+             '--ssh-key',         ansible_ssh_private_key_file,
+             '--ssh-port',        ansible_port | string,
+             '--server-host',     server_addr,
+             '--server-user',     hostvars[groups['control_plane'][0]]['ansible_user'],
+             '--k3s-extra-args',
+               '--token ' + k3s_token + ' ' + extra_agent_args]
+            + (['--k3s-version', k3s_version] if k3s_version else [])
+          }}
+      delegate_to: localhost
+      when: agent_status.rc != 0
+
+
+# ── 4. Verify ─────────────────────────────────────────────────
+- name: Verify cluster
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Wait for all nodes to be Ready
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - get
+          - nodes
+          - --no-headers
+          - -o
+          - custom-columns=STATUS:.status.conditions[-1].type
+      environment:
+        KUBECONFIG: "{{ kubeconfig_output }}"
+      register: node_status
+      until: node_status.stdout_lines | select('search', 'Ready') | list | length ==
+             (groups['control_plane'] | length) + (groups['workers'] | default([]) | length)
+      retries: 20
+      delay: 10
+      changed_when: false
+
+    - name: Copy kubeconfig to ~/.kube/config
+      ansible.builtin.shell: |
+        mkdir -p "$HOME/.kube"
+        sed 's/127.0.0.1/{{ groups["control_plane"][0] }}/g' "{{ kubeconfig_output }}" > "$HOME/.kube/config"
+        chmod 600 "$HOME/.kube/config"
+      changed_when: false
+
+    - name: Show cluster nodes
+      ansible.builtin.command:
+        argv: [kubectl, get, nodes, -o, wide]
+      environment:
+        KUBECONFIG: "{{ kubeconfig_output }}"
+      changed_when: false

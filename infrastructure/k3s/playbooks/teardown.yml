@@ -1,0 +1,66 @@
+---
+# =============================================================
+# teardown.yml — Uninstall k3s from all nodes
+# =============================================================
+
+- name: Confirm teardown
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: confirmation
+      prompt: "Type 'yes' to uninstall k3s from ALL nodes. This cannot be undone"
+      private: false
+  tasks:
+    - name: Abort if not confirmed
+      ansible.builtin.fail:
+        msg: "Teardown cancelled."
+      when: confirmation != 'yes'
+
+
+# ── workers first ─────────────────────────────────────────────
+- name: Uninstall k3s-agent from worker nodes
+  hosts: workers
+  gather_facts: false
+  tasks:
+    - name: Run k3s-agent uninstall script
+      ansible.builtin.command: /usr/local/bin/k3s-agent-uninstall.sh
+      failed_when: false
+      changed_when: true
+
+
+# ── non-init control-plane nodes ─────────────────────────────
+- name: Uninstall k3s from secondary control-plane nodes
+  hosts: control_plane[1:]
+  gather_facts: false
+  tasks:
+    - name: Run k3s uninstall script
+      ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+      failed_when: false
+      changed_when: true
+
+
+# ── init node last ────────────────────────────────────────────
+- name: Uninstall k3s from init control-plane node
+  hosts: control_plane[0]
+  gather_facts: false
+  tasks:
+    - name: Run k3s uninstall script
+      ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+      failed_when: false
+      changed_when: true
+
+
+# ── local cleanup ─────────────────────────────────────────────
+- name: Clean up local kubeconfig
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Remove kubeconfig file
+      ansible.builtin.file:
+        path: "{{ kubeconfig_output }}"
+        state: absent
+
+    - name: Remove ~/.kube/config
+      ansible.builtin.file:
+        path: "{{ lookup('env', 'HOME') }}/.kube/config"
+        state: absent

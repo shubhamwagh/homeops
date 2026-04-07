@@ -1,0 +1,11 @@
+[tools]
+just    = "latest"
+gum     = "latest"
+yq      = "latest"
+helm    = "latest"
+kubectl = "latest"
+"pipx:ansible" = "latest"
+"aqua:alexellis/k3sup" = "latest"
+
+[env]
+_.path = ["{{env.HOME}}/.local/share/mise/installs/pipx-ansible/latest/ansible/bin"]
