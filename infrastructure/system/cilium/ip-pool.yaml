@@ -1,0 +1,13 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: main-pool
+spec:
+  # 192.168.0.2 – 192.168.0.14 (13 usable IPs)
+  # .1  = router
+  # .2–.14 = LoadBalancer IPs (this pool)
+  # .15–.49 = static devices (nodes, Mac, etc.)
+  # .50+ = DHCP range
+  blocks:
+    - cidr: "192.168.0.2/28"
+  allowFirstLastIPs: "No"

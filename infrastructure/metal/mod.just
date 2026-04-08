@@ -1,12 +1,12 @@
 # =============================================================
-# k3s.just — bare-metal k3s cluster operations
+# metal/mod.just — bare-metal k3s cluster provisioning
 # =============================================================
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-K3S_DIR   := justfile_directory() / "infrastructure" / "k3s"
-INVENTORY := K3S_DIR / "inventory.yml"
-PLAYBOOKS := K3S_DIR / "playbooks"
-VARS_FILE := K3S_DIR / "group_vars" / "all.yml"
+METAL_DIR := justfile_directory() / "infrastructure" / "metal"
+INVENTORY  := METAL_DIR / "inventory.yml"
+PLAYBOOKS  := METAL_DIR / "playbooks"
+VARS_FILE  := METAL_DIR / "group_vars" / "all.yml"
 
 # Interactive cluster setup → writes inventory + group_vars
 configure:
@@ -34,7 +34,7 @@ configure:
 
     EXTRA_SERVER=$(gum input --prompt "Extra server args › " --value="--write-kubeconfig-mode=644 --disable=flannel,local-storage,metrics-server,servicelb,traefik --flannel-backend=none --disable-network-policy --disable-cloud-controller --disable-kube-proxy")
     EXTRA_AGENT=$(gum input  --prompt "Extra agent args › "  --placeholder "(leave empty)")
-    KUBECONFIG_OUT=$(gum input --prompt "kubeconfig output path › " --value "{{justfile_directory()}}/kubeconfig")
+    KUBECONFIG_OUT=$(gum input --prompt "kubeconfig output path › " --value "$HOME/.kube/config")
 
     # ── control-plane nodes ───────────────────────────────────
     gum style --bold --foreground 212 "\n▸ Control Plane Nodes"
@@ -60,24 +60,25 @@ configure:
     # ── write inventory.yml + group_vars/all.yml ─────────────
     gum style --bold --foreground 212 "\n▸ Writing files"
 
-    mkdir -p "{{K3S_DIR}}/group_vars"
+    mkdir -p "{{METAL_DIR}}/group_vars"
 
     export SSH_USER SSH_KEY SSH_PORT CP_NODES WRK_NODES
-    gomplate -f "{{K3S_DIR}}/inventory.yml.tpl" -o "{{INVENTORY}}"
+    gomplate -f "{{METAL_DIR}}/inventory.yml.tpl" -o "{{INVENTORY}}"
     chmod 600 "{{INVENTORY}}"
     gum style --foreground 46 "  ✓ inventory.yml"
 
+    KUBECONFIG_OUT=$(eval echo "$KUBECONFIG_OUT")
     export CLUSTER_NAME K3S_TOKEN K3S_VERSION CP_VIP EXTRA_SERVER EXTRA_AGENT KUBECONFIG_OUT
-    gomplate -f "{{K3S_DIR}}/group_vars/all.yml.tpl" -o "{{VARS_FILE}}"
+    gomplate -f "{{METAL_DIR}}/group_vars/all.yml.tpl" -o "{{VARS_FILE}}"
     chmod 600 "{{VARS_FILE}}"
     gum style --foreground 46 "  ✓ group_vars/all.yml"
 
     gum style --foreground 46 --bold \
-      "\nConfiguration saved. Run 'just k3s::install' to provision the cluster."
+      "\nConfiguration saved. Run 'just metal::install' to provision the cluster."
 
 # Provision the full cluster
 install:
-    @[[ -f {{INVENTORY}} ]] || just k3s::configure
+    @[[ -f {{INVENTORY}} ]] || just metal::configure
     ansible-playbook -i {{INVENTORY}} {{PLAYBOOKS}}/install.yml
 
 # Add a node interactively (server or worker)
@@ -91,6 +92,10 @@ teardown:
 # Show cluster node status
 nodes:
     KUBECONFIG=$(yq '.kubeconfig_output' {{VARS_FILE}}) kubectl get nodes -o wide
+
+# Show all pods across all namespaces
+pods:
+    KUBECONFIG=$(yq '.kubeconfig_output' {{VARS_FILE}}) kubectl get pods -A -o wide
 
 # List all helm releases
 helm-list:

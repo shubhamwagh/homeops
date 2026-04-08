@@ -1,0 +1,74 @@
+cluster:
+  name: homelab
+  id: 1
+
+# Replace kube-proxy (k3s is started with --disable-kube-proxy)
+# k8sServiceHost is set dynamically by `just system::cilium` from inventory
+kubeProxyReplacement: true
+k8sServicePort: 6443
+
+# Required for k3s — it mounts cgroups differently to kubeadm
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# Use Kubernetes pod CIDR for IP allocation
+ipam:
+  mode: kubernetes
+
+# L2 announcements — makes LoadBalancer IPs reachable on the home network
+l2announcements:
+  enabled: true
+externalIPs:
+  enabled: true
+loadBalancer:
+  algorithm: maglev
+
+# Gateway API (modern replacement for Ingress)
+gatewayAPI:
+  enabled: true
+  enableAlpn: false
+
+# Hubble — network observability UI
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+    rollOutPods: true
+  ui:
+    enabled: true
+    rollOutPods: true
+
+# Operator — single replica is enough for homelab
+operator:
+  replicas: 1
+  rollOutPods: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+rollOutCiliumPods: true
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Required capabilities for k3s
+securityContext:
+  capabilities:
+    ciliumAgent: [CHOWN, KILL, NET_ADMIN, NET_RAW, IPC_LOCK, SYS_ADMIN, SYS_RESOURCE, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    cleanCiliumState: [NET_ADMIN, SYS_ADMIN, SYS_RESOURCE]
+
+envoy:
+  securityContext:
+    capabilities:
+      keepCapNetBindService: true
+      envoy: [NET_ADMIN, PERFMON, BPF]

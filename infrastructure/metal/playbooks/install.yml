@@ -116,6 +116,19 @@
   hosts: localhost
   gather_facts: false
   tasks:
+    - name: Fix k3sup kubeconfig missing context entry
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - config
+          - set-context
+          - "{{ cluster_name }}"
+          - "--cluster={{ cluster_name }}"
+          - "--user={{ cluster_name }}"
+      environment:
+        KUBECONFIG: "{{ kubeconfig_output }}"
+      changed_when: true
+
     - name: Wait for all nodes to be Ready
       ansible.builtin.command:
         argv:
@@ -134,11 +147,9 @@
       delay: 10
       changed_when: false
 
-    - name: Copy kubeconfig to ~/.kube/config
+    - name: Fix kubeconfig server address (k3sup writes 127.0.0.1)
       ansible.builtin.shell: |
-        mkdir -p "$HOME/.kube"
-        sed 's/127.0.0.1/{{ groups["control_plane"][0] }}/g' "{{ kubeconfig_output }}" > "$HOME/.kube/config"
-        chmod 600 "$HOME/.kube/config"
+        sed -i '' 's/127.0.0.1/{{ groups["control_plane"][0] }}/g' "{{ kubeconfig_output }}"
       changed_when: false
 
     - name: Show cluster nodes

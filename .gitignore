@@ -1,18 +1,7 @@
-# Generated OS provisioning — contains secrets
-infrastructure/os/nodes/
-infrastructure/os/dnsmasq.conf
-infrastructure/os/tftp/
-infrastructure/os/boot/ubuntu/
-infrastructure/os/*.pid
-infrastructure/os/*.log
-
 # Generated cluster config — contains secrets
-infrastructure/k3s/inventory.yml
-infrastructure/k3s/group_vars/all.yml
-infrastructure/k3s/.ansible_cache/
-
-# Kubeconfig — contains cluster credentials
-kubeconfig
+infrastructure/metal/inventory.yml
+infrastructure/metal/group_vars/all.yml
+infrastructure/metal/.ansible_cache/
 
 # IDE
 .vscode/
