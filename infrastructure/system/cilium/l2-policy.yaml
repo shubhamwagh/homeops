@@ -4,11 +4,13 @@ metadata:
   name: main-l2-policy
   namespace: kube-system
 spec:
-  # Matches common Linux NIC names (HP EliteDesk uses enp* or eno*)
+  # Matches common Linux NIC names, and wireless interfaces
   interfaces:
     - enp.*
     - eno.*
     - eth.*
     - ens.*
+    - wlan.*
+    - wlp.*
   loadBalancerIPs: true
   externalIPs: true

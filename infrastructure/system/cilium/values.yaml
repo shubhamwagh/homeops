@@ -7,6 +7,10 @@ cluster:
 kubeProxyReplacement: true
 k8sServicePort: 6443
 
+# Masquerade pod traffic leaving the node so pods can reach the internet
+bpf:
+  masquerade: true
+
 # Required for k3s — it mounts cgroups differently to kubeadm
 cgroup:
   autoMount:
@@ -39,6 +43,10 @@ hubble:
   ui:
     enabled: true
     rollOutPods: true
+    service:
+      type: LoadBalancer
+      annotations:
+        lbipam.cilium.io/ips: "192.168.0.5"
 
 # Operator — single replica is enough for homelab
 operator:
