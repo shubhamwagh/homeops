@@ -1,0 +1,7 @@
+cluster_name: "{{ .Env.CLUSTER_NAME }}"
+k3s_token: "{{ .Env.K3S_TOKEN }}"
+k3s_version: "{{ .Env.K3S_VERSION }}"
+control_plane_vip: "{{ .Env.CP_VIP }}"
+extra_server_args: "{{ .Env.EXTRA_SERVER }}"
+extra_agent_args: "{{ .Env.EXTRA_AGENT }}"
+kubeconfig_output: "{{ .Env.KUBECONFIG_OUT }}"

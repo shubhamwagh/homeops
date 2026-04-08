@@ -26,7 +26,8 @@ just k3s::copy-kubeconfig  # copy kubeconfig to ~/.kube/config
 | `mise` | Pins all tool versions (see `mise.toml`) |
 | `just` | Task runner — the only interface a user needs |
 | `gum` | Interactive terminal UI for `just k3s::configure` |
-| `yq` | Writes `inventory.yml` and `group_vars/all.yml` from configure |
+| `gomplate` | Renders all `.tpl` templates — OS autoinstall, dnsmasq, iPXE, k3s inventory + vars |
+| `yq` | Reads values from generated `inventory.yml` / `group_vars/all.yml` |
 | `ansible` | Executes playbooks over SSH to provision nodes |
 | `k3sup` | Called by Ansible (delegate_to localhost) to install/join k3s |
 | `kubectl` / `helm` | Post-install cluster interaction |
@@ -50,10 +51,12 @@ homeops/
 ├── infrastructure/k3s/mod.just # k3s module recipes
 └── infrastructure/
     └── k3s/
-        ├── ansible.cfg         # SSH pipelining, fact caching, yaml output
-        ├── inventory.yml       # generated (gitignored)
+        ├── ansible.cfg             # SSH pipelining, fact caching, yaml output
+        ├── inventory.yml.tpl       # gomplate template → inventory.yml (gitignored)
+        ├── inventory.yml           # generated (gitignored)
         ├── group_vars/
-        │   └── all.yml         # generated (gitignored)
+        │   ├── all.yml.tpl         # gomplate template → all.yml (gitignored)
+        │   └── all.yml             # generated (gitignored)
         └── playbooks/
             ├── install.yml     # bootstrap + join N servers + N workers + verify
             ├── add-node.yml    # join a single node with vars_prompt

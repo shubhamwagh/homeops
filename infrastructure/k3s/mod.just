@@ -57,43 +57,18 @@ configure:
     gum style --foreground 244 "  Space-separated IPs — leave empty for control-plane-only"
     WRK_NODES=$(gum input --prompt "Worker IPs › " --placeholder "192.168.1.20 192.168.1.21")
 
-    # ── write inventory.yml ───────────────────────────────────
+    # ── write inventory.yml + group_vars/all.yml ─────────────
     gum style --bold --foreground 212 "\n▸ Writing files"
 
     mkdir -p "{{K3S_DIR}}/group_vars"
 
-    yq --null-input \
-      ".all.vars.ansible_ssh_private_key_file = \"$SSH_KEY\" |
-       .all.vars.ansible_port = $SSH_PORT |
-       .all.vars.ansible_ssh_common_args = \"-o StrictHostKeyChecking=no\" |
-       .all.vars.ansible_python_interpreter = \"/usr/bin/python3\"" \
-      > "{{INVENTORY}}"
-
-    for ip in $CP_NODES; do
-      yq -i ".all.children.control_plane.hosts[\"$ip\"].ansible_user = \"$SSH_USER\"" "{{INVENTORY}}"
-    done
-
-    if [[ -n "$WRK_NODES" ]]; then
-      for ip in $WRK_NODES; do
-        yq -i ".all.children.workers.hosts[\"$ip\"].ansible_user = \"$SSH_USER\"" "{{INVENTORY}}"
-      done
-    else
-      yq -i ".all.children.workers.hosts = {}" "{{INVENTORY}}"
-    fi
-
+    export SSH_USER SSH_KEY SSH_PORT CP_NODES WRK_NODES
+    gomplate -f "{{K3S_DIR}}/inventory.yml.tpl" -o "{{INVENTORY}}"
     chmod 600 "{{INVENTORY}}"
     gum style --foreground 46 "  ✓ inventory.yml"
 
-    yq --null-input \
-      ".cluster_name       = \"$CLUSTER_NAME\"  |
-       .k3s_token          = \"$K3S_TOKEN\"    |
-       .k3s_version        = \"$K3S_VERSION\"  |
-       .control_plane_vip  = \"$CP_VIP\"       |
-       .extra_server_args  = \"$EXTRA_SERVER\" |
-       .extra_agent_args   = \"$EXTRA_AGENT\"  |
-       .kubeconfig_output  = \"$KUBECONFIG_OUT\"" \
-      > "{{VARS_FILE}}"
-
+    export CLUSTER_NAME K3S_TOKEN K3S_VERSION CP_VIP EXTRA_SERVER EXTRA_AGENT KUBECONFIG_OUT
+    gomplate -f "{{K3S_DIR}}/group_vars/all.yml.tpl" -o "{{VARS_FILE}}"
     chmod 600 "{{VARS_FILE}}"
     gum style --foreground 46 "  ✓ group_vars/all.yml"
 

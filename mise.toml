@@ -1,10 +1,11 @@
 [tools]
-just    = "latest"
-gum     = "latest"
-yq      = "latest"
+just      = "latest"
+gum       = "latest"
+yq        = "latest"
+gomplate  = "latest"
 helm    = "latest"
 kubectl = "latest"
-"pipx:ansible" = "latest"
+"pipx:ansible"         = "latest"
 "aqua:alexellis/k3sup" = "latest"
 
 [env]
