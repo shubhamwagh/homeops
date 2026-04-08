@@ -1,0 +1,21 @@
+#!ipxe
+
+set node_mac ${net0/mac:hexhyp}
+set base-url http://{{ .Env.SERVER_IP }}:{{ .Env.HTTP_PORT }}
+
+# Map iPXE buildarch to Ubuntu arch name
+iseq ${buildarch} x86_64  && set ubuntu-arch amd64 ||
+iseq ${buildarch} arm64   && set ubuntu-arch arm64 ||
+iseq ${buildarch} aarch64 && set ubuntu-arch arm64 ||
+
+echo ============================================
+echo  homeops PXE boot
+echo  MAC  : ${node_mac}
+echo  Arch : ${buildarch} -> ${ubuntu-arch}
+echo  CFG  : ${base-url}/nodes/${node_mac}/user-data
+echo ============================================
+sleep 2
+
+kernel ${base-url}/boot/ubuntu/${ubuntu-arch}/vmlinuz autoinstall quiet ip=dhcp url=${base-url}/boot/ubuntu/${ubuntu-arch}/ubuntu-live.iso ds=nocloud-net\;s=${base-url}/nodes/${node_mac}/
+initrd ${base-url}/boot/ubuntu/${ubuntu-arch}/initrd
+boot
