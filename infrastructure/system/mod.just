@@ -14,11 +14,11 @@ SYSTEM_DIR := justfile_directory() / "infrastructure" / "system"
 METAL_DIR  := justfile_directory() / "infrastructure" / "metal"
 
 # Install all system components (idempotent)
-install: cilium
+install: cilium longhorn adguard
+    @gum style --foreground 46 --bold "\nAll system components ready."
 
 # Remove all system components
-uninstall: cilium-uninstall
-    @gum style --foreground 46 --bold "\nSystem components ready."
+uninstall: adguard-uninstall longhorn-uninstall cilium-uninstall
 
 # Install / upgrade Cilium (CNI + kube-proxy replacement + L2 load balancer)
 cilium:
@@ -59,6 +59,79 @@ cilium:
     gum style --foreground 46 "  ✓ L2 announcement policy applied"
 
     kubectl -n kube-system rollout status daemonset/cilium --timeout=120s
+
+# Install Longhorn (replicated distributed storage)
+longhorn:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum style --bold --foreground 212 "Installing Longhorn prerequisites on nodes..."
+    ansible-playbook -i "{{METAL_DIR}}/inventory.yml" \
+      "{{SYSTEM_DIR}}/longhorn/prerequisites.yml"
+
+    gum style --bold --foreground 212 "Installing Longhorn..."
+    helm repo add longhorn https://charts.longhorn.io --force-update 2>/dev/null
+    helm repo update longhorn
+
+    helm upgrade --install longhorn longhorn/longhorn \
+      --namespace longhorn-system \
+      --create-namespace \
+      --version 1.7.2 \
+      --values "{{SYSTEM_DIR}}/longhorn/values.yaml" \
+      --wait --timeout 10m
+
+    gum style --foreground 46 "  ✓ Longhorn installed (2 replicas, default StorageClass)"
+
+# Uninstall Longhorn
+longhorn-uninstall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum confirm "Remove Longhorn and ALL volume data?" || exit 0
+
+    helm uninstall longhorn -n longhorn-system --wait
+    kubectl delete namespace longhorn-system --ignore-not-found
+    gum style --foreground 46 "  ✓ Longhorn uninstalled"
+
+# Install AdGuard Home (DNS + ad blocking) at 192.168.0.3
+adguard:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum style --bold --foreground 212 "Installing AdGuard Home..."
+
+    kubectl apply -f "{{SYSTEM_DIR}}/adguard/namespace.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/adguard/pvc.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/adguard/deployment.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/adguard/service.yaml"
+
+    kubectl -n adguard rollout status deployment/adguard-home --timeout=120s
+
+    gum style --foreground 46 "  ✓ AdGuard Home running"
+    gum style --foreground 46 "  ✓ DNS:      192.168.0.3:53"
+    gum style --foreground 46 "  ✓ Setup UI: http://192.168.0.3:3000"
+
+# Uninstall AdGuard Home
+adguard-uninstall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum confirm "Remove AdGuard Home and all data?" || exit 0
+
+    kubectl delete -f "{{SYSTEM_DIR}}/adguard/" --ignore-not-found
+    gum style --foreground 46 "  ✓ AdGuard Home removed"
 
 # Uninstall Cilium and remove L2 policy + IP pool
 cilium-uninstall:
