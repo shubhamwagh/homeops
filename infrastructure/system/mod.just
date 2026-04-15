@@ -14,11 +14,12 @@ SYSTEM_DIR := justfile_directory() / "infrastructure" / "system"
 METAL_DIR  := justfile_directory() / "infrastructure" / "metal"
 
 # Install all system components (idempotent)
-install: cilium longhorn adguard
+install: cilium longhorn adguard homepage skypilot
     @gum style --foreground 46 --bold "\nAll system components ready."
 
 # Remove all system components
-uninstall: adguard-uninstall longhorn-uninstall cilium-uninstall
+uninstall: skypilot-uninstall homepage-uninstall adguard-uninstall longhorn-uninstall cilium-uninstall
+
 
 # Install / upgrade Cilium (CNI + kube-proxy replacement + L2 load balancer)
 cilium:
@@ -59,6 +60,79 @@ cilium:
     gum style --foreground 46 "  ✓ L2 announcement policy applied"
 
     kubectl -n kube-system rollout status daemonset/cilium --timeout=120s
+
+# Install SkyPilot API server + dashboard
+skypilot:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum style --bold --foreground 212 "Installing SkyPilot API server..."
+
+    helm repo add skypilot https://skypilot-org.github.io/skypilot-helm --force-update 2>/dev/null
+    helm repo update skypilot
+
+    helm upgrade --install skypilot skypilot/skypilot \
+      --namespace skypilot \
+      --create-namespace \
+      --version 0.12.0 \
+      --values "{{SYSTEM_DIR}}/skypilot/values.yaml" \
+      --wait --timeout 5m
+
+    gum style --foreground 46 "  ✓ SkyPilot running at http://192.168.0.8"
+    gum style --foreground 46 "  ✓ Configure CLI: sky api login http://192.168.0.8"
+
+# Uninstall SkyPilot
+skypilot-uninstall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum confirm "Remove SkyPilot and all job data?" || exit 0
+
+    helm uninstall skypilot -n skypilot --wait 2>/dev/null || true
+    kubectl delete namespace skypilot --ignore-not-found
+    gum style --foreground 46 "  ✓ SkyPilot removed"
+
+# Install Homepage dashboard
+homepage:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    gum style --bold --foreground 212 "Installing metrics-server..."
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    kubectl patch deployment metrics-server -n kube-system --type='json' \
+      -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+
+    gum style --bold --foreground 212 "Installing Homepage..."
+
+    kubectl apply -f "{{SYSTEM_DIR}}/homepage/namespace.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/homepage/rbac.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/homepage/configmap.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/homepage/deployment.yaml"
+    kubectl apply -f "{{SYSTEM_DIR}}/homepage/service.yaml"
+
+    kubectl -n homepage rollout status deployment/homepage --timeout=120s
+
+    gum style --foreground 46 "  ✓ Homepage running at http://192.168.0.7"
+
+# Uninstall Homepage
+homepage-uninstall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    KUBECONFIG=$(yq '.kubeconfig_output' "{{METAL_DIR}}/group_vars/all.yml" 2>/dev/null || echo "$HOME/.kube/config")
+    export KUBECONFIG
+
+    kubectl delete -f "{{SYSTEM_DIR}}/homepage/" --ignore-not-found
+    gum style --foreground 46 "  ✓ Homepage removed"
 
 # Install Longhorn (replicated distributed storage)
 longhorn:

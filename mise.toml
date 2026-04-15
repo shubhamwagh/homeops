@@ -6,6 +6,7 @@ gomplate  = "latest"
 helm    = "latest"
 kubectl = "latest"
 "pipx:ansible"         = "latest"
+"pipx:skypilot[kubernetes]" = "latest"
 "aqua:alexellis/k3sup" = "latest"
 
 [env]

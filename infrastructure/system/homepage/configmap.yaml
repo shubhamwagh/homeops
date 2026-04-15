@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Didcot Homelab
+    background:
+      image: https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80
+      blur: sm
+      saturate: 50
+      brightness: 50
+      opacity: 30
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    cardBlur: sm
+    statusStyle: dot
+    layout:
+      Networking:
+        style: row
+        columns: 3
+        icon: mdi-network
+      Infrastructure:
+        style: row
+        columns: 3
+        icon: mdi-server
+      AI/ML:
+        style: row
+        columns: 3
+        icon: mdi-brain
+
+  bookmarks.yaml: |
+    - Quick Links:
+        - GitHub:
+            - href: https://github.com
+              icon: si-github
+        - Cloudflare:
+            - href: https://dash.cloudflare.com
+              icon: si-cloudflare
+
+  services.yaml: |
+    - Networking:
+        - AdGuard Home:
+            href: http://adguard.home.didcot
+            icon: adguard-home.png
+            description: DNS + Ad Blocking
+        - Hubble:
+            href: http://hubble.home.didcot
+            icon: si-cilium
+            description: Network Observability
+
+    - Infrastructure:
+        - Longhorn:
+            href: http://longhorn.home.didcot
+            icon: longhorn.png
+            description: Distributed Storage
+
+    - AI/ML:
+        - SkyPilot:
+            href: http://skypilot.home.didcot
+            icon: mdi-rocket-launch
+            description: ML Job Scheduler
+
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: homelab
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - search:
+        provider: google
+        target: _blank
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: long
+          hour12: false
+
+  kubernetes.yaml: |
+    mode: cluster
