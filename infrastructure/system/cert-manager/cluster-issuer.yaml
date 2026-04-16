@@ -1,0 +1,38 @@
+# Step 1: Bootstrap issuer — issues the root CA cert (self-signed)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+# Step 2: Root CA certificate for Didcot Homelab
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: Didcot Homelab CA
+  subject:
+    organizations:
+      - Didcot Homelab
+  secretName: homelab-ca-secret
+  duration: 87600h   # 10 years
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# Step 3: CA issuer — used by all services to get their certs
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-ca-issuer
+spec:
+  ca:
+    secretName: homelab-ca-secret

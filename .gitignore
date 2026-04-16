@@ -3,6 +3,11 @@ infrastructure/metal/inventory.yml
 infrastructure/metal/group_vars/all.yml
 infrastructure/metal/.ansible_cache/
 
+# Keycloak script deps
+infrastructure/system/keycloak/scripts/node_modules/
+infrastructure/system/keycloak/scripts/bun.lock
+infrastructure/system/keycloak/scripts/bun.lockb
+
 # IDE
 .vscode/
 .idea/
@@ -13,3 +18,7 @@ infrastructure/metal/.ansible_cache/
 
 # mise
 .mise.local.toml
+
+# Temp files
+*.tmp
+*.log

@@ -1,0 +1,13 @@
+# External Secrets Operator
+# Works with any backend: Vault, AWS, GCP, 1Password, etc.
+installCRDs: true
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

@@ -1,0 +1,55 @@
+---
+# Configure k3s API server to use Keycloak as OIDC provider
+# Called by: just keycloak::setup-k8s-oidc
+#
+# Variables (passed via -e from mod.just):
+#   oidc_issuer_url   — https://keycloak.home.didcot/realms/homelab
+#   oidc_client_id    — kubernetes
+#   oidc_groups_claim — groups
+#
+# Writes a drop-in config to /etc/rancher/k3s/config.yaml.d/oidc.yaml
+# and restarts k3s on all control-plane nodes (requires k3s >= 1.27).
+#
+# After this: kube-apiserver validates JWTs issued by Keycloak.
+# Bind RBAC roles to OIDC groups:
+#   kubectl create clusterrolebinding oidc-admins \
+#     --clusterrole=cluster-admin \
+#     --group="oidc:admins"
+
+- name: Configure k3s OIDC authentication
+  hosts: control_plane
+  become: true
+  serial: 1   # rolling restart — one node at a time to avoid downtime on HA setups
+
+  tasks:
+    - name: Create k3s config drop-in directory
+      ansible.builtin.file:
+        path: /etc/rancher/k3s/config.yaml.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Write OIDC drop-in config
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml.d/oidc.yaml
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          # Keycloak OIDC authentication for kubectl / kubelogin
+          # Managed by: just keycloak::setup-k8s-oidc
+          kube-apiserver-arg:
+            - "oidc-issuer-url={{ oidc_issuer_url }}"
+            - "oidc-client-id={{ oidc_client_id }}"
+            - "oidc-username-claim=preferred_username"
+            - "oidc-username-prefix=oidc:"
+            - "oidc-groups-claim={{ oidc_groups_claim }}"
+            - "oidc-groups-prefix=oidc:"
+      notify: restart k3s
+
+  handlers:
+    - name: restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted

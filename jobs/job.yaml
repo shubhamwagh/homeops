@@ -1,0 +1,15 @@
+name: cpu-benchmark
+
+resources:
+  cpus: 2
+  memory: 2GB
+  cloud: kubernetes
+
+file_mounts:
+  ~/benchmark.py: ./benchmark.py
+
+setup: |
+  pip install numpy --quiet
+
+run: |
+  python3 ~/benchmark.py

@@ -3,11 +3,14 @@ just      = "latest"
 gum       = "latest"
 yq        = "latest"
 gomplate  = "latest"
-helm    = "latest"
-kubectl = "latest"
-"pipx:ansible"         = "latest"
+helm      = "latest"
+kubectl   = "latest"
+node      = "22"
+bun       = "latest"
+stern     = "latest"
+"pipx:ansible"              = "latest"
 "pipx:skypilot[kubernetes]" = "latest"
-"aqua:alexellis/k3sup" = "latest"
+"aqua:alexellis/k3sup"      = "latest"
 
 [env]
 _.path = ["{{env.HOME}}/.local/share/mise/installs/pipx-ansible/latest/ansible/bin"]

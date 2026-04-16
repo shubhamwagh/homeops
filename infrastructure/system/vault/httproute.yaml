@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  parentRefs:
+    - name: homelab
+      namespace: kube-system
+      sectionName: https
+  hostnames:
+    - "vault.home.didcot"
+  rules:
+    - backendRefs:
+        - name: vault-ui
+          port: 8200

@@ -15,3 +15,26 @@
         name: iscsid
         enabled: true
         state: started
+
+    - name: Configure multipath to ignore Longhorn iSCSI volumes
+      ansible.builtin.copy:
+        dest: /etc/multipath.conf
+        content: |
+          defaults {
+              user_friendly_names yes
+          }
+
+          blacklist {
+              device {
+                  vendor "IET"
+                  product "VIRTUAL-DISK"
+              }
+          }
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Restart multipathd to apply blacklist
+      ansible.builtin.systemd:
+        name: multipathd
+        state: restarted

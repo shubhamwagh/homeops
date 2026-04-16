@@ -30,6 +30,10 @@ data:
         style: row
         columns: 3
         icon: mdi-brain
+      Applications:
+        style: row
+        columns: 4
+        icon: mdi-apps
 
   bookmarks.yaml: |
     - Quick Links:
@@ -43,25 +47,39 @@ data:
   services.yaml: |
     - Networking:
         - AdGuard Home:
-            href: http://adguard.home.didcot
+            href: https://adguard.home.didcot
             icon: adguard-home.png
             description: DNS + Ad Blocking
         - Hubble:
-            href: http://hubble.home.didcot
+            href: https://hubble.home.didcot
             icon: si-cilium
             description: Network Observability
 
     - Infrastructure:
         - Longhorn:
-            href: http://longhorn.home.didcot
+            href: https://longhorn.home.didcot
             icon: longhorn.png
             description: Distributed Storage
+        - Vault:
+            href: https://vault.home.didcot
+            icon: vault.png
+            description: Secrets Management
+        - Keycloak:
+            href: https://keycloak.home.didcot
+            icon: keycloak.png
+            description: Identity & SSO
 
     - AI/ML:
         - SkyPilot:
-            href: http://skypilot.home.didcot
+            href: https://skypilot.home.didcot
             icon: mdi-rocket-launch
             description: ML Job Scheduler
+
+    - Applications:
+        - Tandoor:
+            href: https://tandoor.home.didcot
+            icon: tandoor.png
+            description: Recipe Manager
 
   widgets.yaml: |
     - kubernetes:

@@ -1,136 +1,103 @@
 # homeops
 
-Bare-metal [k3s](https://k3s.io) cluster provisioning — from fresh Ubuntu nodes to a running cluster. Supports N control-plane nodes (HA) and N worker nodes via [k3sup](https://github.com/alexellis/k3sup) + Ansible.
+Bare-metal k3s homelab — from fresh Ubuntu nodes to a fully running cluster with SSO, secrets management, databases, and applications.
 
----
+## Bootstrap
 
-## Prerequisites
+### 1. Install tools
 
-You need [mise](https://mise.jdx.dev) on your local machine. Everything else is managed by mise.
-
-### Install mise
-
-```bash
-# macOS
-brew install mise
-
-# Linux
-curl https://mise.run | sh
+```sh
+brew bundle                          # installs mise, stern, bun, jq, ripgrep, etc.
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc && source ~/.zshrc
+mise install                         # installs just, helm, kubectl, yq, gomplate, ansible, k3sup, node
 ```
 
-Activate in your shell:
+### 2. Provision cluster
 
-```bash
-# bash
-echo 'eval "$(mise activate bash)"' >> ~/.bashrc
-
-# zsh
-echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+```sh
+just metal::configure        # interactive: SSH key, node IPs, k3s version
+just metal::install          # provision k3s on all nodes
+just metal::copy-kubeconfig  # copy kubeconfig to ~/.kube/config
+just metal::nodes            # verify all nodes Ready
 ```
 
-### Install all tools
+### 3. Install system stack
 
-```bash
-mise install   # bootstrap (first time, before just is available)
-just tools     # subsequent runs
+```sh
+just system::install-stack
 ```
 
-Installs: `just`, `gum`, `yq`, `gomplate`, `kubectl`, `helm`, `ansible`, `k3sup`.
+Install order (dependency-driven):
 
----
+| Step | Component | Why |
+|------|-----------|-----|
+| 1 | `cilium` | CNI — required by everything |
+| 2 | `longhorn` | persistent storage |
+| 3 | `cert-manager` | TLS certs + homelab CA |
+| 4 | `adguard` | DNS — must exist before gateway |
+| 5 | `gateway` | ingress — requires cert-manager + DNS |
+| 6 | `vault` | secrets store |
+| 7 | `eso` | syncs Vault secrets into k8s |
+| 8 | `postgres` | CNPG cluster (needs vault + eso) |
+| 9 | `keycloak` | SSO (needs postgres + vault + eso) |
+| 10 | `homepage` | dashboard |
+| 11 | `skypilot` | ML job scheduler |
 
-## Flow
+> **After `just adguard::install`:** complete the setup wizard at `http://192.168.0.3:3000`, then add DNS rewrite `*.home.didcot → 192.168.0.9` and point your router DNS to `192.168.0.3`.
 
-```
-just metal::configure  →  just metal::install  →  just system::install
-```
+### 4. Trust the homelab CA
 
-- **metal** — provisions bare-metal nodes with k3s
-- **system** — installs foundational cluster infrastructure (Cilium CNI)
-
----
-
-## metal
-
-### Configure
-
-```bash
-just metal::configure
-```
-
-Interactive prompts for SSH access, k3s version, cluster token, node IPs, and HA VIP. Writes `inventory.yml` and `group_vars/all.yml` (both gitignored).
-
-### Install
-
-```bash
-just metal::install
+```sh
+just cert-manager::trust-ca
+source ~/.zshrc
 ```
 
-Runs the Ansible playbook:
+### 5. Wire SSO
 
-1. Bootstraps the first control-plane node with `--cluster-init`
-2. Joins additional control-plane nodes one at a time (avoids etcd split-brain)
-3. Joins all worker nodes in parallel
-4. Waits until all nodes report `Ready`
+```sh
+just keycloak::setup-vault-oidc          # Vault UI login via Keycloak
+just keycloak::setup-k8s-oidc           # kubectl login via Keycloak
 
-### Other recipes
-
+just keycloak::create-user homelab <username> <email>
+just keycloak::add-user-to-group homelab <username> admins
 ```
-just metal::add-node          # join one new node (server or worker)
-just metal::teardown          # uninstall k3s from all nodes
-just metal::nodes             # kubectl get nodes -o wide
-just metal::helm-list         # helm list -A
-just metal::copy-kubeconfig   # copy kubeconfig to ~/.kube/config
+
+### 6. Install applications
+
+```sh
+just tandoor::install
 ```
 
 ---
 
-## system
+## Services
 
-```bash
-just system::install
-```
-
-Installs foundational cluster components. Must run after `just metal::install`.
-
-| Component | Purpose |
-|---|---|
-| [Cilium](https://cilium.io) | CNI + kube-proxy replacement via eBPF |
-
-Individual recipes:
-
-```
-just system::cilium   # install / upgrade Cilium only
-```
+| Service | URL |
+|---------|-----|
+| Homepage | `https://homepage.home.didcot` |
+| Vault | `https://vault.home.didcot` |
+| Keycloak | `https://keycloak.home.didcot` |
+| AdGuard | `https://adguard.home.didcot` |
+| Longhorn | `https://longhorn.home.didcot` |
+| Hubble | `https://hubble.home.didcot` |
+| SkyPilot | `https://skypilot.home.didcot` |
+| Tandoor | `https://tandoor.home.didcot` |
 
 ---
 
-## HA Setup Notes
+## Teardown
 
-When using multiple control-plane nodes you need a Virtual IP (VIP). Common options:
-
-| Tool | Notes |
-|---|---|
-| [kube-vip](https://kube-vip.io) | Runs inside the cluster, no extra infra |
-| keepalived | Classic Linux VIP, runs on the nodes |
-| External LB | HAProxy, nginx, cloud LB |
-
-Set the VIP during `just metal::configure`. It is added as `--tls-san` so the API server certificate covers it.
-
----
-
-## Default k3s Server Args
-
-```
---write-kubeconfig-mode=644
---disable=flannel,local-storage,metrics-server,servicelb,traefik
---flannel-backend=none
---disable-network-policy
---disable-cloud-controller
---disable-kube-proxy
+```sh
+just infra::teardown          # removes everything: workloads + Cilium + k3s
 ```
 
-Flannel and kube-proxy are disabled — Cilium replaces both.
+Or step by step:
+
+```sh
+just system::uninstall-stack  # remove all workloads (cluster stays up)
+just cilium::uninstall        # remove CNI
+just metal::teardown          # wipe k3s from nodes
+```
 
 ---
 
@@ -138,19 +105,53 @@ Flannel and kube-proxy are disabled — Cilium replaces both.
 
 ```
 homeops/
-├── mise.toml
-├── Justfile                              # imports metal + system modules
-└── infrastructure/
-    ├── metal/                            # bare-metal k3s provisioning
-    │   ├── mod.just
-    │   ├── ansible.cfg
-    │   ├── inventory.yml.tpl
-    │   ├── group_vars/
-    │   │   └── all.yml.tpl
-    │   └── playbooks/
-    │       ├── install.yml
-    │       ├── add-node.yml
-    │       └── teardown.yml
-    └── system/                           # cluster infrastructure
-        └── mod.just
+├── Brewfile                          # brew bundle — bootstrap Mac tooling
+├── mise.toml                         # tool version pins (just, helm, kubectl, etc.)
+├── Justfile                          # root — imports all modules
+├── infrastructure/
+│   ├── mod.just                      # infra::install, infra::teardown
+│   ├── metal/                        # bare-metal k3s provisioning
+│   │   ├── mod.just
+│   │   ├── README.md
+│   │   ├── inventory.yml.tpl
+│   │   ├── group_vars/all.yml.tpl
+│   │   └── playbooks/
+│   └── system/                       # cluster infrastructure
+│       ├── mod.just                  # install-stack / uninstall-stack
+│       ├── cilium/
+│       ├── longhorn/
+│       ├── cert-manager/
+│       ├── adguard/
+│       ├── gateway/
+│       ├── vault/
+│       ├── external-secrets/
+│       ├── postgresql/
+│       ├── keycloak/
+│       ├── homepage/
+│       └── skypilot/
+└── applications/
+    └── tandoor/                      # recipe manager
+```
+
+Each component has its own `mod.just` (install/uninstall recipes) and `README.md`.
+
+---
+
+## Useful Commands
+
+```sh
+just --list --list-submodules        # all available recipes
+
+just vault::unseal                   # unseal Vault after cluster restart
+just vault::token                    # print Vault root token
+just vault::get secret/foo/bar       # read a secret
+just vault::put secret/foo/bar k=v   # write a secret
+
+just postgres::create-user-db <app>  # create app DB + store creds in Vault
+just postgres::psql                  # open psql shell
+
+just eso::status                     # show ClusterSecretStore + all ExternalSecrets
+just keycloak::admin-password        # print Keycloak admin password
+
+stern -n <namespace> .               # tail logs for all pods in a namespace
 ```

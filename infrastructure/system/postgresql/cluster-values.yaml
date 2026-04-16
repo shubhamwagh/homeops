@@ -1,0 +1,35 @@
+# CloudNativePG Cluster — single instance for homelab
+# Admin credentials are generated at install time and stored in Vault at postgres/admin
+# Apps get their own database + user via: just postgres::create-user-db <app>
+
+cluster:
+  name: postgres-cluster
+  instances: 1
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      wal_level: logical        # required for CDC / logical replication
+
+  storage:
+    size: 20Gi
+    storageClass: longhorn
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  # Superuser credentials are injected via ExternalSecret (see mod.just)
+  superuserSecret: postgres-cluster-superuser
+
+  initdb:
+    database: postgres
+    owner: postgres
+
+backups:
+  enabled: false
