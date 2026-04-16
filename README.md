@@ -9,7 +9,7 @@ Bare-metal k3s homelab — from fresh Ubuntu nodes to a fully running cluster wi
 ```sh
 brew bundle                          # installs mise, stern, bun, jq, ripgrep, etc.
 echo 'eval "$(mise activate zsh)"' >> ~/.zshrc && source ~/.zshrc
-mise install                         # installs just, helm, kubectl, yq, gomplate, ansible, k3sup, node
+mise install                         # installs just, helm, kubectl, yq, gomplate, ansible, k3sup, bun, stern
 ```
 
 ### 2. Provision cluster
@@ -128,7 +128,7 @@ homeops/
 │       ├── postgresql/
 │       ├── keycloak/
 │       ├── homepage/
-│       └── skypilot/
+│       ├── skypilot/
 └── applications/
     └── tandoor/                      # recipe manager
 ```

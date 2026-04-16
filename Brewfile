@@ -15,8 +15,5 @@ brew "zoxide"        # smart cd
 brew "stern"         # multi-pod log tailing
 
 # Dev
-brew "bun"           # JS/TS runtime (Keycloak scripts)
 brew "gnupg"         # GPG
 
-# Casks
-cask "claude-code"
