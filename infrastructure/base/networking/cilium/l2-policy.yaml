@@ -1,0 +1,15 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: main-l2-policy
+  namespace: kube-system
+spec:
+  interfaces:
+    - enp.*
+    - eno.*
+    - eth.*
+    - ens.*
+    - wlan.*
+    - wlp.*
+  loadBalancerIPs: true
+  externalIPs: true

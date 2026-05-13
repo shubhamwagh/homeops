@@ -1,17 +1,10 @@
-# Generated cluster config — contains secrets
+# k3s cluster config — contains secrets
 infrastructure/metal/inventory.yml
 infrastructure/metal/group_vars/all.yml
 infrastructure/metal/.ansible_cache/
 
-# Keycloak script deps
-infrastructure/system/keycloak/scripts/node_modules/
-infrastructure/system/keycloak/scripts/bun.lock
-infrastructure/system/keycloak/scripts/bun.lockb
-
-# IDE
-.vscode/
-.idea/
-*.iml
+# age private key — NEVER commit
+age.agekey
 
 # macOS
 .DS_Store
@@ -19,6 +12,7 @@ infrastructure/system/keycloak/scripts/bun.lockb
 # mise
 .mise.local.toml
 
-# Temp files
+# Temp
 *.tmp
 *.log
+.secrets-plaintext

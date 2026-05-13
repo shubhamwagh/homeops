@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tandoor-config
+  namespace: tandoor
+data:
+  DB_ENGINE: django.db.backends.postgresql
+  POSTGRES_HOST: postgres-rw.postgres.svc.cluster.local
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: tandoor
+  POSTGRES_USER: tandoor
+  ALLOWED_HOSTS: "tandoor.home.didcot"
+  CSRF_TRUSTED_ORIGINS: "https://tandoor.home.didcot"
+  ENABLE_SIGNUP: "0"
+  GUNICORN_MEDIA: "0"

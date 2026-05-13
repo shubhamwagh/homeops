@@ -1,0 +1,18 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+  namespace: postgres
+spec:
+  instances: 1
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  superuserSecret:
+    name: postgres-superuser
+  bootstrap:
+    initdb:
+      database: homelab
+      owner: homelab
+      secret:
+        name: postgres-superuser

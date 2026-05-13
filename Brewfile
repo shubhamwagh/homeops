@@ -1,19 +1,11 @@
-# Homeops tooling
-# Install everything: brew bundle
+# homeops tooling — install: brew bundle
 
-# Core CLI
-brew "mise"          # tool version manager (pins just, helm, kubectl, etc.)
-brew "jq"            # JSON processor
-brew "fzf"           # fuzzy finder
-brew "ripgrep"       # fast grep
-brew "fd"            # fast find
-brew "watch"         # watch command output
-brew "htop"          # process monitor
-brew "zoxide"        # smart cd
+brew "mise"    # tool version manager
+brew "jq"      # JSON processor
+brew "yq"      # YAML processor
+brew "age"     # encryption for SOPS
+brew "sops"    # secret encryption
+brew "stern"   # multi-pod log tailing
 
-# Kubernetes / infra
-brew "stern"         # multi-pod log tailing
-
-# Dev
-brew "gnupg"         # GPG
-
+tap "fluxcd/tap"
+brew "fluxcd/tap/flux"

@@ -1,0 +1,92 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: cilium
+      version: "1.17.3"
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: kube-system
+      interval: 24h
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    k8sServiceHost: "10.43.0.1"
+    k8sServicePort: 443
+
+    cluster:
+      name: homelab
+      id: 1
+
+    # kube-proxy replacement via eBPF
+    kubeProxyReplacement: true
+
+    bpf:
+      masquerade: true
+
+    cgroup:
+      autoMount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
+
+    ipam:
+      mode: kubernetes
+
+    l2announcements:
+      enabled: true
+    externalIPs:
+      enabled: true
+    loadBalancer:
+      algorithm: maglev
+
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+        rollOutPods: true
+      ui:
+        enabled: true
+        rollOutPods: true
+
+    operator:
+      replicas: 1
+      rollOutPods: true
+      resources:
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+
+    rollOutCiliumPods: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+    securityContext:
+      capabilities:
+        ciliumAgent: [CHOWN, KILL, NET_ADMIN, NET_RAW, IPC_LOCK, SYS_ADMIN, SYS_RESOURCE, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+        cleanCiliumState: [NET_ADMIN, SYS_ADMIN, SYS_RESOURCE]
+
+    envoy:
+      securityContext:
+        capabilities:
+          keepCapNetBindService: true
+          envoy: [NET_ADMIN, PERFMON, BPF]

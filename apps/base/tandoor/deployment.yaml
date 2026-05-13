@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tandoor
+  namespace: tandoor
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tandoor
+  template:
+    metadata:
+      labels:
+        app: tandoor
+    spec:
+      containers:
+        - name: tandoor
+          image: vabene1111/recipes:latest
+          envFrom:
+            - configMapRef:
+                name: tandoor-config
+            - secretRef:
+                name: tandoor-secret
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: media
+              mountPath: /opt/recipes/mediafiles
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: tandoor-media
