@@ -11,6 +11,7 @@ spec:
     kind: GitRepository
     name: flux-system
   path: ./infrastructure/staging
+  wait: true
   decryption:
     provider: sops
     secretRef:
