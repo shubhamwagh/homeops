@@ -5,7 +5,7 @@ INVENTORY  := $(METAL_DIR)/inventory.yml
 VARS_FILE  := $(METAL_DIR)/group_vars/all.yml
 PLAYBOOKS  := $(METAL_DIR)/playbooks
 
-.PHONY: tools configure install add-node teardown nodes copy-kubeconfig \
+.PHONY: tools configure install add-node teardown nodes copy-kubeconfig bootstrap cilium-bootstrap \
         flux-setup-age flux-create-sops-secret flux-bootstrap flux-status flux-sync secrets
 
 # ─── tooling ───────────────────────────────────────────────────────────────
@@ -72,6 +72,29 @@ configure:
 	else
 	  echo "$(INVENTORY) already exists — edit it directly or delete and re-run"
 	fi
+
+# Full cluster bootstrap: k3s + Cilium (run once, then use flux-bootstrap)
+bootstrap: install copy-kubeconfig cilium-bootstrap
+
+# Install Cilium manually before Flux bootstraps (chicken-and-egg: CNI needed for pods)
+cilium-bootstrap:
+	helm repo add cilium https://helm.cilium.io/ 2>/dev/null || true
+	helm repo update cilium
+	helm upgrade --install cilium cilium/cilium \
+	  --version 1.17.3 \
+	  --namespace kube-system \
+	  --set k8sServiceHost=10.43.0.1 \
+	  --set k8sServicePort=443 \
+	  --set kubeProxyReplacement=true \
+	  --set bpf.masquerade=true \
+	  --set cgroup.autoMount.enabled=false \
+	  --set cgroup.hostRoot=/sys/fs/cgroup \
+	  --set ipam.mode=kubernetes \
+	  --set l2announcements.enabled=true \
+	  --set externalIPs.enabled=true \
+	  --set operator.replicas=1 \
+	  --wait --timeout=5m
+	@echo "Cilium ready. Run: GITHUB_TOKEN=<token> GITHUB_USER=<user> make flux-bootstrap"
 
 install: $(INVENTORY)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/install.yml
