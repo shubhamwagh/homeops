@@ -21,7 +21,7 @@ spec:
             - --config
             - /etc/cloudflared/config/config.yaml
             - --protocol
-            - http2
+            - h2mux
             - run
           livenessProbe:
             httpGet:
