@@ -20,7 +20,30 @@ Flash to USB with [Balena Etcher](https://etcher.balena.io), boot each node, and
 
 ## Static IPs
 
-Set via **router DHCP reservation** (MAC -> IP binding). No OS-level static IP config needed.
+Set via netplan on each node. Edit `/etc/netplan/50-cloud-init.yaml`:
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    eno1:
+      dhcp4: no
+      addresses:
+        - 192.168.0.XX/24   # change XX per node: 32, 33, 34
+      routes:
+        - to: default
+          via: 192.168.0.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+```
+
+Apply with:
+```bash
+sudo netplan apply
+```
+
 Gateway: `192.168.0.1`
 
 ## SSH Config (control machine)
