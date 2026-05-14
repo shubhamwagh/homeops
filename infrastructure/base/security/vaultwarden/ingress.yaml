@@ -8,8 +8,12 @@ metadata:
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - vault.home.shublab.com
+      secretName: shublab-wildcard-tls
   rules:
-    - host: vault.home.didcot
+    - host: vault.home.shublab.com
       http:
         paths:
           - path: /

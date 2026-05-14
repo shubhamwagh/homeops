@@ -7,11 +7,12 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`traefik.home.didcot`)
+    - match: Host(`traefik.home.shublab.com`)
       kind: Rule
       middlewares:
         - name: traefik-dashboard-auth
       services:
         - name: api@internal
           kind: TraefikService
-  tls: {}
+  tls:
+    secretName: shublab-wildcard-tls

@@ -47,37 +47,37 @@ data:
   services.yaml: |
     - Networking:
         - AdGuard Home:
-            href: https://adguard.home.didcot
+            href: https://adguard.home.shublab.com
             icon: adguard-home.png
             description: DNS + Ad Blocking
         - Hubble:
-            href: https://hubble.home.didcot
+            href: https://hubble.home.shublab.com
             icon: si-cilium
             description: Network Observability
         - Traefik:
-            href: https://traefik.home.didcot
+            href: https://traefik.home.shublab.com
             icon: traefik.png
             description: Ingress Controller
 
     - Infrastructure:
         - Longhorn:
-            href: https://longhorn.home.didcot
+            href: https://longhorn.home.shublab.com
             icon: longhorn.png
             description: Distributed Storage
         - Keycloak:
-            href: https://keycloak.home.didcot
+            href: https://keycloak.home.shublab.com
             icon: keycloak.png
             description: Identity & SSO
 
     - Monitoring:
         - Grafana:
-            href: https://grafana.home.didcot
+            href: https://grafana.home.shublab.com
             icon: grafana.png
             description: Dashboards & Alerts
 
     - Applications:
         - Tandoor:
-            href: https://tandoor.home.didcot
+            href: https://tandoor.home.shublab.com
             icon: tandoor.png
             description: Recipe Manager
 

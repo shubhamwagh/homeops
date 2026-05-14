@@ -20,7 +20,7 @@ data:
         - json
 
     server:
-      base_url: https://search.home.didcot/
+      base_url: https://search.home.shublab.com/
       bind_address: "0.0.0.0"
       port: 8080
       limiter: false

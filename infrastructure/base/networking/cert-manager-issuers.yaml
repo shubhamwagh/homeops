@@ -1,35 +1,58 @@
-# Self-signed bootstrap issuer
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: selfsigned-issuer
+  name: letsencrypt-prod
 spec:
-  selfSigned: {}
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: shubhamtatvamasi@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
 ---
-# Root CA for the homelab
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: shubhamtatvamasi@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: homelab-ca
+  name: shublab-wildcard
   namespace: cert-manager
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
 spec:
-  isCA: true
-  commonName: Didcot Homelab CA
-  secretName: homelab-ca-secret
-  duration: 87600h
-  privateKey:
-    algorithm: ECDSA
-    size: 256
+  secretName: shublab-wildcard-tls
+  secretTemplate:
+    annotations:
+      reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng"
+      reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
   issuerRef:
-    name: selfsigned-issuer
+    name: letsencrypt-prod
     kind: ClusterIssuer
-    group: cert-manager.io
----
-# CA issuer used by all services
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: homelab-ca-issuer
-spec:
-  ca:
-    secretName: homelab-ca-secret
+  commonName: "*.home.shublab.com"
+  dnsNames:
+    - "home.shublab.com"
+    - "*.home.shublab.com"

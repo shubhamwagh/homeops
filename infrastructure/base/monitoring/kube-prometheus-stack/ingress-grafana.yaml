@@ -4,16 +4,16 @@ metadata:
   name: grafana
   namespace: monitoring
   annotations:
-    cert-manager.io/cluster-issuer: homelab-ca-issuer
+    cert-manager.io/cluster-issuer: letsencrypt-prod
     traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - grafana.home.didcot
-      secretName: grafana-tls
+        - grafana.home.shublab.com
+      secretName: shublab-wildcard-tls
   rules:
-    - host: grafana.home.didcot
+    - host: grafana.home.shublab.com
       http:
         paths:
           - path: /

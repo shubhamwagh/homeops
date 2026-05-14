@@ -28,8 +28,8 @@ spec:
     ingress:
       enabled: true
       ingressClassName: traefik
-      host: longhorn.home.didcot
+      host: longhorn.home.shublab.com
       tls: true
       tlsSecret: longhorn-tls
       annotations:
-        cert-manager.io/cluster-issuer: homelab-ca-issuer
+        cert-manager.io/cluster-issuer: letsencrypt-prod
