@@ -1,6 +1,6 @@
 # homeops
 
-Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI, Traefik, cert-manager, Longhorn, and Prometheus.
+Bare-metal k3s homelab - GitOps with FluxCD, SOPS+age secrets, Cilium CNI, Traefik, cert-manager, Longhorn, and Prometheus.
 
 ## Full Setup (fresh nodes → running cluster)
 
@@ -8,13 +8,13 @@ Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI, Tra
 # 1. Install tools (once)
 make tools
 
-# 2. Configure cluster — enter node IPs, SSH key, cluster name
+# 2. Configure cluster - enter node IPs, SSH key, cluster name
 make configure
 
 # 3. Install k3s + Cilium CNI
 make bootstrap
 
-# 4. Bootstrap GitOps — secrets, sops key, flux (GITHUB_TOKEN must be in env)
+# 4. Bootstrap GitOps - secrets, sops key, flux (GITHUB_TOKEN must be in env)
 make gitops
 ```
 
@@ -30,7 +30,7 @@ make bootstrap   # reinstall k3s + cilium
 make gitops      # re-encrypt secrets + flux bootstrap
 ```
 
-`age.agekey` is preserved across teardown — back it up to 1Password once and never lose it.
+`age.agekey` is preserved across teardown - back it up to 1Password once and never lose it.
 
 ## Day-to-day
 
@@ -62,7 +62,7 @@ make nodes          # kubectl get nodes -o wide
 
 ## Renovate
 
-Renovate bot runs daily at 2am and opens PRs for outdated Helm chart versions. A Dependency Dashboard issue is created on the repo — use it to trigger manual runs or approve updates.
+Renovate bot runs daily at 2am and opens PRs for outdated Helm chart versions. A Dependency Dashboard issue is created on the repo - use it to trigger manual runs or approve updates.
 
 ## Prerequisites
 
