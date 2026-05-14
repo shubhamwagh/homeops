@@ -40,14 +40,14 @@ metadata:
   namespace: cert-manager
   annotations:
     reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng,headscale"
     reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
 spec:
   secretName: shublab-wildcard-tls
   secretTemplate:
     annotations:
       reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "traefik,monitoring,longhorn-system,homepage,tandoor,vaultwarden,searxng,headscale"
       reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
   issuerRef:
     name: letsencrypt-prod
