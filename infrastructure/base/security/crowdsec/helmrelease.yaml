@@ -39,10 +39,6 @@ spec:
       env:
         - name: TZ
           value: "UTC"
-        - name: DISABLE_ONLINE_API
-          value: "true"
-        - name: DISABLE_AGENT
-          value: "false"
       strategy:
         type: Recreate
     agent:
