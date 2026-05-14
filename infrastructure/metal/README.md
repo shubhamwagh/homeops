@@ -1,87 +1,79 @@
 # Metal
 
-Bare-metal k3s cluster provisioning using k3sup and Ansible. Supports N control-plane nodes (HA) and N worker nodes.
+Bare-metal node setup for the homeops k3s cluster.
 
-## Prerequisites
+## Nodes
 
-- Nodes reachable over SSH with a known key
-- Tools installed: `just tools` (installs mise, ansible, k3sup, gomplate, yq, gum, etc.)
+| Role | IP | CPU | RAM | Disk |
+|---|---|---|---|---|
+| control-plane | 192.168.0.32 | 4 cores | 8 GB | 116 GB SSD |
+| worker | 192.168.0.33 | 4 cores | 8 GB | 233 GB SSD |
+| worker | 192.168.0.34 | 4 cores | 8 GB | 233 GB NVMe |
 
-## Recipes
+All nodes: Ubuntu 24.04 LTS, user `smw`, SSH key `~/.ssh/id_ed25519`.
 
-| Recipe | Description |
-|---|---|
-| `just metal::configure` | Interactive setup — writes `inventory.yml` + `group_vars/all.yml` |
-| `just metal::install` | Provision full cluster (bootstraps init node, joins servers + workers) |
-| `just metal::add-node` | Join one new node interactively (server or worker) |
-| `just metal::teardown` | Uninstall k3s from all nodes (after Cilium removed) |
-| `just metal::copy-kubeconfig` | Copy kubeconfig from control-plane to `~/.kube/config` |
-| `just metal::nodes` | `kubectl get nodes -o wide` |
-| `just metal::pods` | `kubectl get pods -A -o wide` |
-| `just metal::helm-list` | `helm list -A` |
+## Static IPs
 
-## First-Time Setup
+Set via **router DHCP reservation** (MAC → IP binding). No OS-level static IP config needed.
 
-```sh
-# 1. Install all tools
-just tools
+| Node | MAC (eno1) | IP |
+|---|---|---|
+| control-plane | `fc:3f:db:06:17:f1` | 192.168.0.32 |
+| worker-1 | — | 192.168.0.33 |
+| worker-2 | — | 192.168.0.34 |
 
-# 2. Interactive config (prompts for IPs, SSH key, k3s settings)
-just metal::configure
+Gateway: `192.168.0.1`
 
-# 3. Provision the cluster
-just metal::install
+## One-time Node Setup
 
-# 4. Copy kubeconfig locally
-just metal::copy-kubeconfig
+Run on **each node** after Ubuntu install:
 
-# 5. Verify
-just metal::nodes
+```bash
+# 1. Essential packages for Longhorn storage
+sudo apt update && sudo apt install -y \
+  open-iscsi \
+  nfs-common \
+  cifs-utils
+
+# 2. Enable iSCSI (required for Longhorn)
+sudo systemctl enable --now iscsid
+
+# 3. Kernel modules for Cilium
+sudo modprobe iptable_raw xt_socket
+echo -e "xt_socket\niptable_raw" | sudo tee /etc/modules-load.d/cilium.conf
+
+# 4. Disable firewall (k3s + Cilium manage their own rules)
+sudo ufw disable
+
+# 5. Passwordless sudo for ansible (replace smw with your user)
+echo "smw ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/smw
 ```
 
-## Configuration
-
-`just metal::configure` writes two gitignored files:
-
-| File | Purpose |
-|---|---|
-| `infrastructure/metal/inventory.yml` | Ansible inventory — node IPs + SSH config |
-| `infrastructure/metal/group_vars/all.yml` | Cluster variables — token, version, VIP, etc. |
-
-These are generated from `*.tpl` templates via `gomplate`. **Never edit them by hand** — re-run `just metal::configure` instead.
-
-### Key Variables
-
-| Variable | Purpose |
-|---|---|
-| `cluster_name` | kubeconfig context name |
-| `k3s_token` | Shared cluster secret |
-| `k3s_version` | Pinned k3s version (blank = latest stable) |
-| `control_plane_vip` | VIP for HA; leave empty for single control-plane |
-| `extra_server_args` | Extra flags for k3s server (flannel/traefik disabled by default) |
-| `kubeconfig_output` | Local path where kubeconfig is written |
-
-## HA Setup
-
-For 3+ control-plane nodes, `just metal::configure` will prompt for a VIP (e.g. managed by kube-vip or an external load balancer). The install playbook joins secondary servers with `serial: 1` to avoid etcd split-brain.
-
-## Adding a Node
-
-```sh
-just metal::add-node
-# prompted: node IP, SSH user, role (server or worker)
+Copy your SSH key to each node:
+```bash
+ssh-copy-id smw@192.168.0.32
+ssh-copy-id smw@192.168.0.33
+ssh-copy-id smw@192.168.0.34
 ```
 
-## Teardown
+## Verify Before Running make bootstrap
 
-```sh
-# Full destroy — single command
-just infra::teardown
+```bash
+# SSH works passwordlessly to all nodes
+ssh smw@192.168.0.32 hostname
+ssh smw@192.168.0.33 hostname
+ssh smw@192.168.0.34 hostname
 
-# Or step by step:
-just system::uninstall-stack   # remove all workloads
-just cilium::uninstall         # remove CNI
-just metal::teardown           # wipe k3s from nodes
+# iSCSI running on all nodes
+ssh smw@192.168.0.32 systemctl is-active iscsid
+ssh smw@192.168.0.33 systemctl is-active iscsid
+ssh smw@192.168.0.34 systemctl is-active iscsid
 ```
 
-`inventory.yml` and `group_vars/all.yml` are preserved after teardown so you can re-provision without re-running `just metal::configure`.
+## Then
+
+```bash
+make configure   # enter node IPs, SSH key, cluster name
+make bootstrap   # k3s install + cilium
+make gitops      # secrets + flux bootstrap
+```
