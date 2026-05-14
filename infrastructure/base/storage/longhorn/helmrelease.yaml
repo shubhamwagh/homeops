@@ -24,12 +24,9 @@ spec:
       retries: 3
   values:
     defaultSettings:
-      defaultReplicaCount: 1
+      defaultReplicaCount: 2
+    persistence:
+      defaultClassReplicaCount: 2
+      reclaimPolicy: Retain
     ingress:
-      enabled: true
-      ingressClassName: traefik
-      host: longhorn.shublab.com
-      tls: true
-      tlsSecret: longhorn-tls
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
+      enabled: false

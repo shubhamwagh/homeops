@@ -8,5 +8,8 @@ resources:
   - ../../base/networking/traefik/ingress-dashboard.yaml
   - ../../base/storage/longhorn/recurring-jobs
   - ../../base/storage/longhorn/servicemonitor.yaml
+  - ../../base/storage/longhorn/secret-basic-auth.sops.yaml
+  - ../../base/storage/longhorn/middleware-auth.yaml
+  - ../../base/storage/longhorn/ingress.yaml
   - ../../base/security/crowdsec/servicemonitor.yaml
   - postgres

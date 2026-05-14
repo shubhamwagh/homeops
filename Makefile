@@ -139,6 +139,8 @@ secrets: ensure-age-key
 	 TANDOOR_KEY=$$(openssl rand -base64 48); \
 	 TANDOOR_DB_PASS=$$(openssl rand -base64 24); \
 	 SEARXNG_SECRET=$$(openssl rand -hex 32); \
+	 LONGHORN_PASS=$$(openssl rand -base64 18); \
+	 LONGHORN_HTPASSWD=$$(htpasswd -nb admin "$$LONGHORN_PASS" | sed 's/\$$/\$\$\$\$/g'); \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: grafana-admin-secret\n  namespace: monitoring\nstringData:\n  admin-password: "%s"\n' \
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
@@ -152,14 +154,17 @@ secrets: ensure-age-key
 	   "$(CLOUDFLARE_TOKEN)" > infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: searxng-secret\n  namespace: searxng\nstringData:\n  secret-key: "%s"\n' \
 	   "$$SEARXNG_SECRET" > infrastructure/base/searxng/secret.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: longhorn-basic-auth\n  namespace: longhorn-system\ndata:\n  users: "%s"\n' \
+	   "$$(printf '%s' "$$LONGHORN_HTPASSWD" | base64)" > infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/config/base/postgres/secret-tandoor-user.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/controllers/renovate/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/searxng/secret.sops.yaml; \
-	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\n' \
-	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" > .secrets-plaintext; \
+	 sops --encrypt --in-place infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
+	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\nlonghorn:         admin / %s\n' \
+	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" "$$LONGHORN_PASS" > .secrets-plaintext; \
 	 echo "All secrets encrypted. Plaintext saved to .secrets-plaintext"
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
