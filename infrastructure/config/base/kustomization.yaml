@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - ../../base/networking/cert-manager-issuers.yaml
   - ../../base/networking/traefik-middleware-security.yaml
+  - ../../base/storage/longhorn/recurring-jobs
   - postgres
