@@ -8,7 +8,7 @@ GITHUB_USER ?= shubhamwagh
 GITHUB_REPO ?= homeops
 
 .PHONY: tools configure install add-node teardown nodes copy-kubeconfig \
-        bootstrap cilium-bootstrap ensure-age-key secrets gitops \
+        bootstrap cilium-bootstrap ensure-age-key secrets gitops preflight \
         flux-create-sops-secret flux-bootstrap flux-status flux-sync
 
 # ─── tooling ───────────────────────────────────────────────────────────────
@@ -57,9 +57,13 @@ add-node: $(INVENTORY)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/add-node.yml
 
 teardown: $(INVENTORY)
+	@echo "WARNING: This will destroy the k3s cluster and all Longhorn PVC data (Tandoor recipes, etc)."
+	@echo "age.agekey will be kept. Back it up securely before proceeding."
+	@read -rp "Type 'yes' to confirm teardown: " CONFIRM; [ "$$CONFIRM" = "yes" ] || (echo "Aborted." && exit 1)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/teardown.yml
 	rm -f .secrets-plaintext
-	@echo "Cluster torn down. age.agekey kept — back it up to 1Password."
+	@echo ""
+	@echo "Cluster torn down. age.agekey kept - back it up securely before running make gitops again."
 
 nodes:
 	kubectl get nodes -o wide
@@ -95,6 +99,20 @@ $(INVENTORY):
 
 # ─── gitops bootstrap (run once after cluster is up) ───────────────────────
 
+# Verify all required tools and env are present before bootstrapping
+preflight:
+	@echo "Checking required tools..."
+	@command -v kubectl   >/dev/null || (echo "MISSING: kubectl"   && exit 1)
+	@command -v flux      >/dev/null || (echo "MISSING: flux"      && exit 1)
+	@command -v sops      >/dev/null || (echo "MISSING: sops"      && exit 1)
+	@command -v age       >/dev/null || (echo "MISSING: age"       && exit 1)
+	@command -v age-keygen >/dev/null || (echo "MISSING: age-keygen" && exit 1)
+	@test -n "$(GITHUB_TOKEN)"     || (echo "MISSING env: GITHUB_TOKEN"     && exit 1)
+	@test -n "$(CLOUDFLARE_TOKEN)" || (echo "MISSING env: CLOUDFLARE_TOKEN" && exit 1)
+	@kubectl cluster-info --request-timeout=5s >/dev/null 2>&1 || (echo "MISSING: kubectl cannot reach cluster - run make bootstrap first" && exit 1)
+	@test -f age.agekey || (echo "MISSING: age.agekey - run make ensure-age-key or restore from backup" && exit 1)
+	@echo "Preflight OK"
+
 # Auto-generate age key if missing and update .sops.yaml
 ensure-age-key:
 	@if [ ! -f age.agekey ]; then \
@@ -108,9 +126,14 @@ ensure-age-key:
 	fi
 
 # Generate + encrypt all secrets (grafana, tandoor, renovate GitHub token)
+# Skips if secrets already exist. Force rotation: ROTATE=true make secrets
 secrets: ensure-age-key
 	@test -n "$(GITHUB_TOKEN)"    || (echo "GITHUB_TOKEN not set"    && exit 1)
 	@test -n "$(CLOUDFLARE_TOKEN)" || (echo "CLOUDFLARE_TOKEN not set" && exit 1)
+	@if [ "$(ROTATE)" != "true" ] && grep -q "^sops:" apps/base/tandoor/secret.sops.yaml 2>/dev/null; then \
+	  echo "Secrets already exist. Skipping generation (use ROTATE=true to rotate)."; \
+	  exit 0; \
+	fi
 	@echo "Generating and encrypting secrets..."
 	@GRAFANA_PASS=$$(openssl rand -base64 24); \
 	 TANDOOR_KEY=$$(openssl rand -base64 48); \
@@ -164,10 +187,10 @@ flux-bootstrap:
 
 # Single command: age key → secrets → commit → sops secret → flux bootstrap
 # Usage: GITHUB_TOKEN=xxx CLOUDFLARE_TOKEN=xxx make gitops
-gitops: secrets flux-commit-secrets flux-create-sops-secret flux-bootstrap
+gitops: preflight secrets flux-commit-secrets flux-create-sops-secret flux-bootstrap
 	@echo ""
 	@echo "GitOps bootstrapped. Check status: make flux-status"
-	@echo "Save .secrets-plaintext to 1Password, then: rm .secrets-plaintext"
+	@echo "Back up age.agekey and .secrets-plaintext securely, then: rm .secrets-plaintext"
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 
