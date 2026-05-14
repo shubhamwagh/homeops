@@ -58,6 +58,8 @@ add-node: $(INVENTORY)
 
 teardown: $(INVENTORY)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/teardown.yml
+	rm -f age.agekey .secrets-plaintext
+	@echo "Local secrets cleaned up"
 
 nodes:
 	kubectl get nodes -o wide
