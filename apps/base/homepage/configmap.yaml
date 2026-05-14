@@ -83,7 +83,7 @@ data:
             description: Private Search Engine
         - Tandoor:
             href: https://tandoor.shublab.com
-            icon: tandoor.png
+            icon: tandoor-recipes.png
             description: Recipe Manager
 
   widgets.yaml: |
