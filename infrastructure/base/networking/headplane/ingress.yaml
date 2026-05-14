@@ -5,7 +5,7 @@ metadata:
   namespace: headscale
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
-    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd,headscale-headplane-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
