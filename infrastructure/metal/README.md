@@ -23,9 +23,9 @@ Flash to USB with [Balena Etcher](https://etcher.balena.io), boot each node, and
 Set via **router DHCP reservation** (MAC -> IP binding). No OS-level static IP config needed.
 Gateway: `192.168.0.1`
 
-## SSH Config (macbook)
+## SSH Config (control machine)
 
-Add to `~/.ssh/config` to SSH using hostnames:
+Add to `~/.ssh/config` on your control machine to SSH using hostnames:
 
 ```
 # HomeLab
