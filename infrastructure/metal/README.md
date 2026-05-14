@@ -43,16 +43,16 @@ network:
   version: 2
   ethernets:
     eno1:          # replace with your interface name
-      dhcp4: false
+      dhcp4: no
       addresses:
-        - 192.168.0.32/24   # set per node
+        - 192.168.0.32/24   # set per node: .32, .33, .34
       routes:
         - to: default
           via: 192.168.0.1
       nameservers:
         addresses:
           - 8.8.8.8
-          - 1.1.1.1
+          - 8.8.4.4
 ```
 
 **4. Apply and verify**
