@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: gissilabs
+  namespace: vaultwarden
+spec:
+  url: https://gissilabs.github.io/charts/
+  interval: 12h

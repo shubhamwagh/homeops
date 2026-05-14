@@ -1,0 +1,55 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: vaultwarden
+      version: "1.2.6"
+      sourceRef:
+        kind: HelmRepository
+        name: gissilabs
+        namespace: vaultwarden
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              version: v1
+              kind: PersistentVolumeClaim
+              name: vaultwarden-vaultwarden
+            patch: |
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: vaultwarden-vaultwarden
+                labels:
+                  recurring-job.longhorn.io/source: "enabled"
+                  recurring-job.longhorn.io/snapshot-daily: "enabled"
+  values:
+    image:
+      repository: vaultwarden/server
+      tag: 1.35.8-alpine
+    env:
+      TZ: "Europe/London"
+      DOMAIN: "https://vault.home.didcot"
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "true"
+      SHOW_PASSWORD_HINT: "false"
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    strategy:
+      type: Recreate
+    ingress:
+      enabled: false

@@ -1,0 +1,76 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crowdsec
+  namespace: crowdsec
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: crowdsec
+      version: "0.12.x"
+      sourceRef:
+        kind: HelmRepository
+        name: crowdsec
+        namespace: crowdsec
+  values:
+    lapi:
+      replicas: 1
+      persistentVolume:
+        enabled: true
+        existingClaim: crowdsec-lapi-data
+        accessModes:
+          - ReadWriteOnce
+      database:
+        type: sqlite
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+          interval: 30s
+      env:
+        - name: TZ
+          value: "UTC"
+        - name: DISABLE_ONLINE_API
+          value: "true"
+        - name: DISABLE_AGENT
+          value: "false"
+      strategy:
+        type: Recreate
+    agent:
+      enabled: true
+      kind: DaemonSet
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          cpu: 200m
+          memory: 400Mi
+      acquisition:
+        - namespace: traefik
+          podName: "*"
+          program: traefik
+      env:
+        - name: TZ
+          value: "UTC"
+        - name: COLLECTIONS
+          value: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/base-http-scenarios"
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+          interval: 30s
+    dashboard:
+      enabled: false
+    tls:
+      enabled: false

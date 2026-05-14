@@ -4,8 +4,5 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  - service-api.yaml
-  - middleware-auth.yaml
-  - secret-dashboard-auth.sops.yaml
-  - ingress-dashboard.yaml
-  - pdb.yaml
+  - pvc-lapi.yaml
+  - servicemonitor.yaml

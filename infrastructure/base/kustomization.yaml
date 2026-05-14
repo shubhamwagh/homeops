@@ -5,3 +5,5 @@ resources:
   - storage
   - monitoring
   - controllers
+  - security
+  - searxng
