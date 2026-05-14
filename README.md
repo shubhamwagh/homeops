@@ -1,157 +1,50 @@
 # homeops
 
-Bare-metal k3s homelab — from fresh Ubuntu nodes to a fully running cluster with SSO, secrets management, databases, and applications.
+Bare-metal k3s homelab — GitOps with FluxCD, SOPS secrets, Cilium CNI, Traefik, cert-manager, Longhorn, and Prometheus.
 
-## Bootstrap
+## Full Setup (fresh nodes → running cluster)
 
-### 1. Install tools
+```bash
+# 1. Install tools
+make tools
 
-```sh
-brew bundle                          # installs mise, stern, bun, jq, ripgrep, etc.
-echo 'eval "$(mise activate zsh)"' >> ~/.zshrc && source ~/.zshrc
-mise install                         # installs just, helm, kubectl, yq, gomplate, ansible, k3sup, bun, stern
+# 2. Configure cluster (interactive — enter node IPs, SSH key, cluster name)
+make configure
+
+# 3. Install k3s + Cilium CNI
+make bootstrap
+
+# 4. Bootstrap GitOps (generates secrets, uploads age key, bootstraps Flux)
+GITHUB_TOKEN=ghp_xxx make gitops
 ```
 
-### 2. Provision cluster
+After step 4, Flux reconciles the repo and deploys everything automatically.
 
-```sh
-just metal::configure        # interactive: SSH key, node IPs, k3s version
-just metal::install          # provision k3s on all nodes
-just metal::copy-kubeconfig  # copy kubeconfig to ~/.kube/config
-just metal::nodes            # verify all nodes Ready
+> **After `make gitops`:** save passwords from `.secrets-plaintext` to 1Password, then `rm .secrets-plaintext`.
+
+## Day-to-day
+
+```bash
+make flux-status    # show all Flux resources
+make flux-sync      # force reconcile from git
+make nodes          # kubectl get nodes -o wide
 ```
 
-### 3. Install system stack
+## Stack
 
-```sh
-just system::install-stack
-```
+| Layer | Tool |
+|---|---|
+| CNI + L2 LB | Cilium |
+| Ingress | Traefik |
+| TLS | cert-manager (self-signed CA) |
+| Storage | Longhorn |
+| Monitoring | kube-prometheus-stack + Grafana |
+| Controllers | Reloader, Renovate |
+| GitOps | FluxCD |
+| Secrets | SOPS + age |
 
-Install order (dependency-driven):
+## Prerequisites
 
-| Step | Component | Why |
-|------|-----------|-----|
-| 1 | `cilium` | CNI — required by everything |
-| 2 | `longhorn` | persistent storage |
-| 3 | `cert-manager` | TLS certs + homelab CA |
-| 4 | `adguard` | DNS — must exist before gateway |
-| 5 | `gateway` | ingress — requires cert-manager + DNS |
-| 6 | `vault` | secrets store |
-| 7 | `eso` | syncs Vault secrets into k8s |
-| 8 | `postgres` | CNPG cluster (needs vault + eso) |
-| 9 | `keycloak` | SSO (needs postgres + vault + eso) |
-| 10 | `homepage` | dashboard |
-| 11 | `skypilot` | ML job scheduler |
-
-> **After `just adguard::install`:** complete the setup wizard at `http://192.168.0.3:3000`, then add DNS rewrite `*.home.didcot → 192.168.0.9` and point your router DNS to `192.168.0.3`.
-
-### 4. Trust the homelab CA
-
-```sh
-just cert-manager::trust-ca
-source ~/.zshrc
-```
-
-### 5. Wire SSO
-
-```sh
-just keycloak::setup-vault-oidc          # Vault UI login via Keycloak
-just keycloak::setup-k8s-oidc           # kubectl login via Keycloak
-
-just keycloak::create-user homelab <username> <email>
-just keycloak::add-user-to-group homelab <username> admins
-```
-
-### 6. Install applications
-
-```sh
-just tandoor::install
-```
-
----
-
-## Services
-
-| Service | URL |
-|---------|-----|
-| Homepage | `https://homepage.home.didcot` |
-| Vault | `https://vault.home.didcot` |
-| Keycloak | `https://keycloak.home.didcot` |
-| AdGuard | `https://adguard.home.didcot` |
-| Longhorn | `https://longhorn.home.didcot` |
-| Hubble | `https://hubble.home.didcot` |
-| SkyPilot | `https://skypilot.home.didcot` |
-| Tandoor | `https://tandoor.home.didcot` |
-
----
-
-## Teardown
-
-```sh
-just infra::teardown          # removes everything: workloads + Cilium + k3s
-```
-
-Or step by step:
-
-```sh
-just system::uninstall-stack  # remove all workloads (cluster stays up)
-just cilium::uninstall        # remove CNI
-just metal::teardown          # wipe k3s from nodes
-```
-
----
-
-## Project Structure
-
-```
-homeops/
-├── Brewfile                          # brew bundle — bootstrap Mac tooling
-├── mise.toml                         # tool version pins (just, helm, kubectl, etc.)
-├── Justfile                          # root — imports all modules
-├── infrastructure/
-│   ├── mod.just                      # infra::install, infra::teardown
-│   ├── metal/                        # bare-metal k3s provisioning
-│   │   ├── mod.just
-│   │   ├── README.md
-│   │   ├── inventory.yml.tpl
-│   │   ├── group_vars/all.yml.tpl
-│   │   └── playbooks/
-│   └── system/                       # cluster infrastructure
-│       ├── mod.just                  # install-stack / uninstall-stack
-│       ├── cilium/
-│       ├── longhorn/
-│       ├── cert-manager/
-│       ├── adguard/
-│       ├── gateway/
-│       ├── vault/
-│       ├── external-secrets/
-│       ├── postgresql/
-│       ├── keycloak/
-│       ├── homepage/
-│       ├── skypilot/
-└── applications/
-    └── tandoor/                      # recipe manager
-```
-
-Each component has its own `mod.just` (install/uninstall recipes) and `README.md`.
-
----
-
-## Useful Commands
-
-```sh
-just --list --list-submodules        # all available recipes
-
-just vault::unseal                   # unseal Vault after cluster restart
-just vault::token                    # print Vault root token
-just vault::get secret/foo/bar       # read a secret
-just vault::put secret/foo/bar k=v   # write a secret
-
-just postgres::create-user-db <app>  # create app DB + store creds in Vault
-just postgres::psql                  # open psql shell
-
-just eso::status                     # show ClusterSecretStore + all ExternalSecrets
-just keycloak::admin-password        # print Keycloak admin password
-
-stern -n <namespace> .               # tail logs for all pods in a namespace
-```
+- Ubuntu nodes reachable via SSH
+- macOS with Homebrew (`brew bundle` installs: mise, age, sops, flux, jq, yq, stern)
+- GitHub repo (Flux bootstraps from `clusters/staging`)
