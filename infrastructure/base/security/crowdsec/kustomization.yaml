@@ -5,4 +5,3 @@ resources:
   - helmrepository.yaml
   - helmrelease.yaml
   - pvc-lapi.yaml
-  - servicemonitor.yaml

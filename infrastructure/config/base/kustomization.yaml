@@ -4,4 +4,6 @@ resources:
   - ../../base/networking/cert-manager-issuers.yaml
   - ../../base/networking/traefik-middleware-security.yaml
   - ../../base/storage/longhorn/recurring-jobs
+  - ../../base/storage/longhorn/servicemonitor.yaml
+  - ../../base/security/crowdsec/servicemonitor.yaml
   - postgres
