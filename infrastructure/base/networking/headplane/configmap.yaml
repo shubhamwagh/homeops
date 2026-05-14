@@ -5,12 +5,16 @@ metadata:
   namespace: headscale
 data:
   config.yaml: |
-    listen_addr: "0.0.0.0:3000"
-    headscale_url: "http://headscale:8080"
-    headscale_public_url: "https://headscale.shublab.com"
-    api_key_file: "/secrets/api-key"
-    cookie_secret_file: "/secrets/cookie-secret"
-    cookie_max_age: 2592000
-    cookie_secure: false
-    disable_api_key_login: false
-    disable_config_validation: true
+    server:
+      host: "0.0.0.0"
+      port: 3000
+      base_url: "https://headplane.shublab.com"
+      cookie_secret_path: "/secrets/cookie-secret"
+      cookie_secure: true
+      cookie_max_age: 2592000
+      data_path: "/var/lib/headplane"
+
+    headscale:
+      url: "http://headscale:8080"
+      api_key_path: "/secrets/api-key"
+      config_path: "/etc/headscale/config.yaml"
