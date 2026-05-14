@@ -12,4 +12,6 @@ data:
     ingress:
       - hostname: headscale.shublab.com
         service: http://headscale:8080
+        originRequest:
+          noTLSVerify: false
       - service: http_status:404
