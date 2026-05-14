@@ -22,12 +22,89 @@ spec:
       retries: 3
   values:
     cronjob:
-      schedule: "0 */6 * * *"
+      schedule: "0 2 * * *"
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 3
+      failedJobsHistoryLimit: 3
+
     renovate:
       config: |
         {
-          "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-          "extends": ["config:base"],
-          "flux": { "enabled": true },
-          "helm-values": { "enabled": true }
+          "platform": "github",
+          "repositories": ["shubhamwagh/homeops"],
+          "schedule": ["after 2am and before 4am"],
+          "timezone": "Europe/London",
+          "automerge": false,
+          "dependencyDashboard": true,
+          "requireConfig": "optional",
+          "semanticCommits": "enabled",
+          "separateMajorMinor": true,
+          "separateMinorPatch": false,
+          "labels": ["dependencies", "renovate"],
+          "flux": {
+            "managerFilePatterns": [
+              "/(^|/)clusters\\/staging\\/flux-system\\/gotk-components\\.ya?ml$/"
+            ]
+          },
+          "kubernetes": {
+            "managerFilePatterns": [
+              "/(^|/)apps\\/base\\/.+\\/deployment\\.ya?ml$/",
+              "/(^|/)infrastructure\\/base\\/.+\\/deployment\\.ya?ml$/"
+            ]
+          },
+          "helm-values": {
+            "managerFilePatterns": [
+              "/(^|/)apps\\/base\\/.+\\/helmrelease.*\\.ya?ml$/",
+              "/(^|/)infrastructure\\/base\\/.+\\/helmrelease.*\\.ya?ml$/"
+            ]
+          },
+          "packageRules": [
+            {
+              "matchUpdateTypes": ["patch"],
+              "matchCategories": ["infrastructure"],
+              "groupName": "Infrastructure - Patch Updates",
+              "automerge": false
+            },
+            {
+              "matchUpdateTypes": ["minor"],
+              "matchCategories": ["infrastructure"],
+              "groupName": "Infrastructure - Minor Updates",
+              "automerge": false
+            },
+            {
+              "matchUpdateTypes": ["major"],
+              "groupName": "{{depName}} - Major Update",
+              "labels": ["major-update", "needs-review"],
+              "automerge": false
+            },
+            {
+              "matchPackagePatterns": ["flux", "cert-manager", "traefik", "longhorn"],
+              "labels": ["critical-infrastructure"],
+              "automerge": false
+            },
+            {
+              "matchDatasources": ["docker"],
+              "versioning": "docker"
+            },
+            {
+              "matchDatasources": ["helm"],
+              "versioning": "helm"
+            }
+          ]
         }
+
+    env:
+      - name: LOG_LEVEL
+        value: info
+
+    envFrom:
+      - secretRef:
+          name: renovate-github-token
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
