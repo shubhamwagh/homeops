@@ -20,31 +20,47 @@ Flash to USB with [Balena Etcher](https://etcher.balena.io), boot each node, and
 
 ## Static IPs
 
-Set via netplan on each node. Edit `/etc/netplan/50-cloud-init.yaml`:
+Repeat for each node.
+
+**1. Identify network interface**
+```bash
+ip addr
+```
+Look for the primary interface (e.g., `eno1`, `enp1s0`).
+
+**2. Identify default gateway**
+```bash
+ip route
+```
+
+**3. Edit netplan config**
+```bash
+sudo vi /etc/netplan/50-cloud-init.yaml
+```
 
 ```yaml
 network:
   version: 2
   ethernets:
-    eno1:
-      dhcp4: no
+    eno1:          # replace with your interface name
+      dhcp4: false
       addresses:
-        - 192.168.0.XX/24   # change XX per node: 32, 33, 34
+        - 192.168.0.32/24   # set per node
       routes:
         - to: default
           via: 192.168.0.1
       nameservers:
         addresses:
           - 8.8.8.8
-          - 8.8.4.4
+          - 1.1.1.1
 ```
 
-Apply with:
+**4. Apply and verify**
 ```bash
 sudo netplan apply
+ip a
+ping 8.8.8.8
 ```
-
-Gateway: `192.168.0.1`
 
 ## SSH Config (control machine)
 
