@@ -13,6 +13,7 @@ spec:
   path: ./apps/staging
   dependsOn:
     - name: infrastructure
+    - name: infrastructure-config
   decryption:
     provider: sops
     secretRef:
