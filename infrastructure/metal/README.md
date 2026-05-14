@@ -3,30 +3,40 @@
 ```mermaid
 graph TD
     Router["🌐 Router
-    192.168.0.1"]
+    ──────────────
+    IP: 192.168.0.1"]
 
-    subgraph cluster["k3s Cluster"]
+    subgraph cluster["☸️ k3s Cluster — HP EliteDesk 800 G2 DM"]
         CP["🖥️ homelab-hpg2-node1
-        control-plane
-        192.168.0.32
-        4 cores / 8 GB / 116 GB SSD"]
+        ──────────────
+        Role: control-plane
+        IP:   192.168.0.32
+        CPU:  4 cores
+        RAM:  8 GB
+        Disk: 116 GB SSD"]
 
         W1["🖥️ homelab-hpg2-node2
-        worker
-        192.168.0.33
-        4 cores / 8 GB / 256 GB SSD"]
+        ──────────────
+        Role: worker
+        IP:   192.168.0.33
+        CPU:  4 cores
+        RAM:  8 GB
+        Disk: 256 GB SSD"]
 
         W2["🖥️ homelab-hpg2-node3
-        worker
-        192.168.0.34
-        4 cores / 8 GB / 256 GB NVMe"]
+        ──────────────
+        Role: worker
+        IP:   192.168.0.34
+        CPU:  4 cores
+        RAM:  8 GB
+        Disk: 256 GB NVMe"]
     end
 
     Router --> CP
     Router --> W1
     Router --> W2
-    CP -- k3s --> W1
-    CP -- k3s --> W2
+    CP -- k3s API --> W1
+    CP -- k3s API --> W2
 ```
 
 # Metal
