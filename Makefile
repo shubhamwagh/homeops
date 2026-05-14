@@ -8,7 +8,7 @@ GITHUB_USER ?= shubhamwagh
 GITHUB_REPO ?= homeops
 
 .PHONY: tools configure install add-node teardown nodes copy-kubeconfig \
-        bootstrap cilium-bootstrap secrets gitops \
+        bootstrap cilium-bootstrap ensure-age-key secrets gitops \
         flux-create-sops-secret flux-bootstrap flux-status flux-sync
 
 # ─── tooling ───────────────────────────────────────────────────────────────
@@ -58,8 +58,8 @@ add-node: $(INVENTORY)
 
 teardown: $(INVENTORY)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/teardown.yml
-	rm -f age.agekey .secrets-plaintext
-	@echo "Local secrets cleaned up"
+	rm -f .secrets-plaintext
+	@echo "Cluster torn down. age.agekey kept — back it up to 1Password."
 
 nodes:
 	kubectl get nodes -o wide
@@ -95,14 +95,22 @@ $(INVENTORY):
 
 # ─── gitops bootstrap (run once after cluster is up) ───────────────────────
 
-# Single command: generates secrets, uploads sops key, bootstraps Flux
-# Usage: GITHUB_TOKEN=ghp_xxx make gitops
-gitops: secrets flux-create-sops-secret flux-bootstrap
-	@echo ""
-	@echo "GitOps stack bootstrapped. Flux is reconciling — check with: make flux-status"
+# Auto-generate age key if missing and update .sops.yaml
+ensure-age-key:
+	@if [ ! -f age.agekey ]; then \
+	  echo "Generating new age key..."; \
+	  age-keygen -o age.agekey; \
+	  PUB_KEY=$$(grep "public key" age.agekey | awk '{print $$NF}'); \
+	  sed -i '' "s/age1[a-z0-9]*$$/$$PUB_KEY/" .sops.yaml; \
+	  echo "Updated .sops.yaml with new public key: $$PUB_KEY"; \
+	else \
+	  echo "age.agekey exists — reusing existing key"; \
+	fi
 
-secrets:
-	@echo "Generating secrets..."
+# Generate + encrypt all secrets (grafana, tandoor, renovate GitHub token)
+secrets: ensure-age-key
+	@test -n "$(GITHUB_TOKEN)" || (echo "GITHUB_TOKEN not set" && exit 1)
+	@echo "Generating and encrypting secrets..."
 	@GRAFANA_PASS=$$(openssl rand -base64 24); \
 	 TANDOOR_KEY=$$(openssl rand -base64 48); \
 	 TANDOOR_DB_PASS=$$(openssl rand -base64 24); \
@@ -110,14 +118,22 @@ secrets:
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
 	   "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" > apps/base/tandoor/secret.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: renovate-github-token\n  namespace: renovate\nstringData:\n  RENOVATE_TOKEN: "%s"\n' \
+	   "$(GITHUB_TOKEN)" > infrastructure/base/controllers/renovate/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
-	 printf '# Store these in 1Password then delete this file!\ngrafana:     %s\ntandoor-key: %s\ntandoor-db:  %s\n' \
+	 sops --encrypt --in-place infrastructure/base/controllers/renovate/secret.sops.yaml; \
+	 printf '# Store in 1Password then delete this file!\ngrafana:     %s\ntandoor-key: %s\ntandoor-db:  %s\n' \
 	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" > .secrets-plaintext; \
-	 echo "Secrets encrypted. Plaintext saved to .secrets-plaintext"
+	 echo "All secrets encrypted. Plaintext saved to .secrets-plaintext"
+
+# Commit updated .sops.yaml + encrypted secrets and push to git
+flux-commit-secrets:
+	@git add .sops.yaml infrastructure/ apps/
+	@git diff --cached --quiet && echo "No secret changes to commit" || \
+	  (git commit -m "chore: rotate encrypted secrets" && git push)
 
 flux-create-sops-secret:
-	@test -f age.agekey || (echo "age.agekey not found — run: age-keygen -o age.agekey  then update .sops.yaml" && exit 1)
 	kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -
 	kubectl create secret generic sops-age \
 	  --namespace=flux-system \
@@ -125,7 +141,7 @@ flux-create-sops-secret:
 	  --dry-run=client -o yaml | kubectl apply -f -
 
 flux-bootstrap:
-	@test -n "$(GITHUB_TOKEN)" || (echo "GITHUB_TOKEN not set — run: GITHUB_TOKEN=ghp_xxx make flux-bootstrap" && exit 1)
+	@test -n "$(GITHUB_TOKEN)" || (echo "GITHUB_TOKEN not set" && exit 1)
 	flux bootstrap github \
 	  --owner=$(GITHUB_USER) \
 	  --repository=$(GITHUB_REPO) \
@@ -133,6 +149,13 @@ flux-bootstrap:
 	  --path=clusters/staging \
 	  --personal \
 	  --token-auth
+
+# Single command: age key → secrets → commit → sops secret → flux bootstrap
+# Usage: make gitops   (GITHUB_TOKEN must be in env)
+gitops: secrets flux-commit-secrets flux-create-sops-secret flux-bootstrap
+	@echo ""
+	@echo "GitOps bootstrapped. Check status: make flux-status"
+	@echo "Save .secrets-plaintext to 1Password, then: rm .secrets-plaintext"
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 
