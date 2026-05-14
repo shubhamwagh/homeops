@@ -109,22 +109,30 @@ ensure-age-key:
 
 # Generate + encrypt all secrets (grafana, tandoor, renovate GitHub token)
 secrets: ensure-age-key
-	@test -n "$(GITHUB_TOKEN)" || (echo "GITHUB_TOKEN not set" && exit 1)
+	@test -n "$(GITHUB_TOKEN)"    || (echo "GITHUB_TOKEN not set"    && exit 1)
+	@test -n "$(CLOUDFLARE_TOKEN)" || (echo "CLOUDFLARE_TOKEN not set" && exit 1)
 	@echo "Generating and encrypting secrets..."
 	@GRAFANA_PASS=$$(openssl rand -base64 24); \
 	 TANDOOR_KEY=$$(openssl rand -base64 48); \
 	 TANDOOR_DB_PASS=$$(openssl rand -base64 24); \
+	 SEARXNG_SECRET=$$(openssl rand -hex 32); \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: grafana-admin-secret\n  namespace: monitoring\nstringData:\n  admin-password: "%s"\n' \
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
 	   "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" > apps/base/tandoor/secret.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: renovate-github-token\n  namespace: renovate\nstringData:\n  RENOVATE_TOKEN: "%s"\n' \
 	   "$(GITHUB_TOKEN)" > infrastructure/base/controllers/renovate/secret.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token\n  namespace: cert-manager\nstringData:\n  api-token: "%s"\n' \
+	   "$(CLOUDFLARE_TOKEN)" > infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: searxng-secret\n  namespace: searxng\nstringData:\n  secret-key: "%s"\n' \
+	   "$$SEARXNG_SECRET" > infrastructure/base/searxng/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/controllers/renovate/secret.sops.yaml; \
-	 printf '# Store in 1Password then delete this file!\ngrafana:     %s\ntandoor-key: %s\ntandoor-db:  %s\n' \
-	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" > .secrets-plaintext; \
+	 sops --encrypt --in-place infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
+	 sops --encrypt --in-place infrastructure/base/searxng/secret.sops.yaml; \
+	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\n' \
+	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" > .secrets-plaintext; \
 	 echo "All secrets encrypted. Plaintext saved to .secrets-plaintext"
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
@@ -151,7 +159,7 @@ flux-bootstrap:
 	  --token-auth
 
 # Single command: age key → secrets → commit → sops secret → flux bootstrap
-# Usage: make gitops   (GITHUB_TOKEN must be in env)
+# Usage: GITHUB_TOKEN=xxx CLOUDFLARE_TOKEN=xxx make gitops
 gitops: secrets flux-commit-secrets flux-create-sops-secret flux-bootstrap
 	@echo ""
 	@echo "GitOps bootstrapped. Check status: make flux-status"
