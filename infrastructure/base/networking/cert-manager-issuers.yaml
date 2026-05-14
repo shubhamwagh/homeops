@@ -52,7 +52,7 @@ spec:
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
-  commonName: "*.home.shublab.com"
+  commonName: "*.shublab.com"
   dnsNames:
-    - "home.shublab.com"
-    - "*.home.shublab.com"
+    - "shublab.com"
+    - "*.shublab.com"

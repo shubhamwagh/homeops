@@ -28,7 +28,7 @@ spec:
     ingress:
       enabled: true
       ingressClassName: traefik
-      host: longhorn.home.shublab.com
+      host: longhorn.shublab.com
       tls: true
       tlsSecret: longhorn-tls
       annotations:

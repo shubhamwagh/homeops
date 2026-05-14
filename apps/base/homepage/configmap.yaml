@@ -55,13 +55,13 @@ data:
             icon: si-cilium
             description: Network Observability
         - Traefik:
-            href: https://traefik.home.shublab.com
+            href: https://traefik.shublab.com
             icon: traefik.png
             description: Ingress Controller
 
     - Infrastructure:
         - Longhorn:
-            href: https://longhorn.home.shublab.com
+            href: https://longhorn.shublab.com
             icon: longhorn.png
             description: Distributed Storage
         - Keycloak:
@@ -71,13 +71,13 @@ data:
 
     - Monitoring:
         - Grafana:
-            href: https://grafana.home.shublab.com
+            href: https://grafana.shublab.com
             icon: grafana.png
             description: Dashboards & Alerts
 
     - Applications:
         - Tandoor:
-            href: https://tandoor.home.shublab.com
+            href: https://tandoor.shublab.com
             icon: tandoor.png
             description: Recipe Manager
 

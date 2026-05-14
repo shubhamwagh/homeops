@@ -34,7 +34,7 @@ spec:
       tag: 1.35.8-alpine
     env:
       TZ: "Europe/London"
-      DOMAIN: "https://vault.home.shublab.com"
+      DOMAIN: "https://vault.shublab.com"
       SIGNUPS_ALLOWED: "false"
       INVITATIONS_ALLOWED: "true"
       SHOW_PASSWORD_HINT: "false"

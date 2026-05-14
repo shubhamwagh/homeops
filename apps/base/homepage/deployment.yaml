@@ -19,7 +19,7 @@ spec:
           image: ghcr.io/gethomepage/homepage:latest
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "homepage.home.shublab.com"
+              value: "home.shublab.com"
           ports:
             - containerPort: 3000
           volumeMounts:

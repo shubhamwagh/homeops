@@ -10,10 +10,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - homepage.home.shublab.com
+        - home.shublab.com
       secretName: shublab-wildcard-tls
   rules:
-    - host: homepage.home.shublab.com
+    - host: home.shublab.com
       http:
         paths:
           - path: /

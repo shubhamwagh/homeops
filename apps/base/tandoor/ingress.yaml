@@ -10,10 +10,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - tandoor.home.shublab.com
+        - tandoor.shublab.com
       secretName: shublab-wildcard-tls
   rules:
-    - host: tandoor.home.shublab.com
+    - host: tandoor.shublab.com
       http:
         paths:
           - path: /

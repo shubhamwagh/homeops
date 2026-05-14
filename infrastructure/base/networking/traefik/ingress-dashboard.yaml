@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`traefik.home.shublab.com`)
+    - match: Host(`traefik.shublab.com`)
       kind: Rule
       middlewares:
         - name: traefik-dashboard-auth
