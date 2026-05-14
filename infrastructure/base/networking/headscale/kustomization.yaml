@@ -9,6 +9,3 @@ resources:
   - service-derp.yaml
   - deployment.yaml
   - ingress.yaml
-  - secret-cloudflared.sops.yaml
-  - cloudflared-configmap.yaml
-  - cloudflared-deployment.yaml
