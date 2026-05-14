@@ -45,7 +45,7 @@ echo -e "xt_socket\niptable_raw" | sudo tee /etc/modules-load.d/cilium.conf
 # 4. Disable firewall (k3s + Cilium manage their own rules)
 sudo ufw disable
 
-# 5. Passwordless sudo for ansible (replace smw with your user)
+# 5. Passwordless sudo — required by k3sup to install k3s (replace smw with your user)
 echo "smw ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/smw
 ```
 
