@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - ../../base/networking/cert-manager-issuers.yaml
   - ../../base/networking/traefik-middleware-security.yaml
+  - postgres

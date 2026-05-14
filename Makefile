@@ -120,6 +120,9 @@ secrets: ensure-age-key
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
 	   "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" > apps/base/tandoor/secret.sops.yaml; \
+	 mkdir -p infrastructure/config/base/postgres; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: postgres-tandoor-user\n  namespace: postgres\nstringData:\n  username: tandoor\n  password: "%s"\n' \
+	   "$$TANDOOR_DB_PASS" > infrastructure/config/base/postgres/secret-tandoor-user.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: renovate-github-token\n  namespace: renovate\nstringData:\n  RENOVATE_TOKEN: "%s"\n' \
 	   "$(GITHUB_TOKEN)" > infrastructure/base/controllers/renovate/secret.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token\n  namespace: cert-manager\nstringData:\n  api-token: "%s"\n' \
@@ -128,6 +131,7 @@ secrets: ensure-age-key
 	   "$$SEARXNG_SECRET" > infrastructure/base/searxng/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
+	 sops --encrypt --in-place infrastructure/config/base/postgres/secret-tandoor-user.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/controllers/renovate/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/searxng/secret.sops.yaml; \
