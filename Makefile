@@ -141,6 +141,8 @@ secrets: ensure-age-key
 	 SEARXNG_SECRET=$$(openssl rand -hex 32); \
 	 LONGHORN_PASS=$$(openssl rand -base64 18); \
 	 LONGHORN_HTPASSWD=$$(htpasswd -nb admin "$$LONGHORN_PASS" | sed 's/\$$/\$\$\$\$/g'); \
+	 TRAEFIK_PASS=$$(openssl rand -base64 18); \
+	 TRAEFIK_HTPASSWD=$$(htpasswd -nb admin "$$TRAEFIK_PASS" | sed 's/\$$/\$\$\$\$/g'); \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: grafana-admin-secret\n  namespace: monitoring\nstringData:\n  admin-password: "%s"\n' \
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
@@ -156,6 +158,8 @@ secrets: ensure-age-key
 	   "$$SEARXNG_SECRET" > infrastructure/base/searxng/secret.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: longhorn-basic-auth\n  namespace: longhorn-system\ndata:\n  users: "%s"\n' \
 	   "$$(printf '%s' "$$LONGHORN_HTPASSWD" | base64)" > infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: traefik-dashboard-auth\n  namespace: traefik\nstringData:\n  users: "%s"\n' \
+	   "$$TRAEFIK_HTPASSWD" > infrastructure/base/networking/traefik/secret-dashboard-auth.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/config/base/postgres/secret-tandoor-user.sops.yaml; \
@@ -163,8 +167,9 @@ secrets: ensure-age-key
 	 sops --encrypt --in-place infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/searxng/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
-	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\nlonghorn:         admin / %s\n' \
-	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" "$$LONGHORN_PASS" > .secrets-plaintext; \
+	 sops --encrypt --in-place infrastructure/base/networking/traefik/secret-dashboard-auth.sops.yaml; \
+	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\nlonghorn:         admin / %s\ntraefik:          admin / %s\n' \
+	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" "$$LONGHORN_PASS" "$$TRAEFIK_PASS" > .secrets-plaintext; \
 	 echo "All secrets encrypted. Plaintext saved to .secrets-plaintext"
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
