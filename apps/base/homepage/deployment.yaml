@@ -1,8 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata:
-  name: homepage
-  namespace: homepage
+metadata:\n  name: homepage\n  namespace: homepage\n  annotations:\n    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
