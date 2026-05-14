@@ -5,7 +5,7 @@ metadata:
   namespace: homepage
 data:
   settings.yaml: |
-    title: Didcot Homelab
+    title: Shublab Homelab
     background:
       image: https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80
       blur: sm
@@ -26,6 +26,10 @@ data:
         style: row
         columns: 3
         icon: mdi-server
+      Security:
+        style: row
+        columns: 3
+        icon: mdi-shield-lock
       Monitoring:
         style: row
         columns: 3
@@ -38,7 +42,7 @@ data:
   bookmarks.yaml: |
     - Quick Links:
         - GitHub:
-            - href: https://github.com
+            - href: https://github.com/shubhamwagh/homeops
               icon: si-github
         - Cloudflare:
             - href: https://dash.cloudflare.com
@@ -46,14 +50,6 @@ data:
 
   services.yaml: |
     - Networking:
-        - AdGuard Home:
-            href: https://adguard.home.shublab.com
-            icon: adguard-home.png
-            description: DNS + Ad Blocking
-        - Hubble:
-            href: https://hubble.home.shublab.com
-            icon: si-cilium
-            description: Network Observability
         - Traefik:
             href: https://traefik.shublab.com
             icon: traefik.png
@@ -64,18 +60,27 @@ data:
             href: https://longhorn.shublab.com
             icon: longhorn.png
             description: Distributed Storage
-        - Keycloak:
-            href: https://keycloak.home.shublab.com
-            icon: keycloak.png
-            description: Identity & SSO
+
+    - Security:
+        - Vaultwarden:
+            href: https://vault.shublab.com
+            icon: vaultwarden.png
+            description: Password Manager
+        - CrowdSec:
+            icon: crowdsec.png
+            description: Intrusion Detection
 
     - Monitoring:
         - Grafana:
             href: https://grafana.shublab.com
             icon: grafana.png
-            description: Dashboards & Alerts
+            description: Dashboards & Metrics
 
     - Applications:
+        - SearXNG:
+            href: https://search.shublab.com
+            icon: searxng.png
+            description: Private Search Engine
         - Tandoor:
             href: https://tandoor.shublab.com
             icon: tandoor.png
@@ -95,7 +100,8 @@ data:
           memory: true
           showLabel: true
     - search:
-        provider: google
+        provider: custom
+        url: https://search.shublab.com/search?q=
         target: _blank
     - datetime:
         text_size: xl
