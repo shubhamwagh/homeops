@@ -11,24 +11,53 @@ public IP is required for reliable mobile + internet connectivity.
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    subgraph clients["Client Devices"]
+        MAC["Mac\n(Tailscale)"]
+        IPHONE["iPhone\n(Tailscale)"]
+    end
+
+    subgraph vps["Oracle Free Tier VPS · headscale.<domain>"]
+        HS["Headscale v0.28.0\nCoordination Server"]
+        DERP["Embedded DERP Relay\n(fallback relay)"]
+        STUN["STUN Server :3478\n(NAT traversal)"]
+    end
+
+    subgraph lan["Homelab LAN · 192.168.0.0/24"]
+        NODE1["node1 · 192.168.0.32\nk3s control-plane\nsubnet route advertiser"]
+        NODE2["node2 · 192.168.0.33\nk3s worker"]
+        NODE3["node3 · 192.168.0.34\nk3s worker"]
+
+        subgraph services["In-cluster Services"]
+            TRAEFIK["Traefik · 192.168.0.2"]
+            APPS["grafana · tandoor\nlonghorn · vaultwarden\nsearxng · headplane"]
+        end
+    end
+
+    MAC -- "HTTPS/WebSocket\nTS2021 protocol\n(key exchange)" --> HS
+    IPHONE -- "HTTPS/WebSocket\nTS2021 protocol\n(key exchange)" --> HS
+
+    HS --> DERP
+    HS --> STUN
+
+    MAC -- "WireGuard\n(direct P2P after handshake)" --> NODE1
+    IPHONE -- "WireGuard\n(via DERP if P2P fails)" --> DERP --> NODE1
+
+    NODE1 -- "subnet route\n192.168.0.0/24" --> NODE2
+    NODE1 -- "subnet route\n192.168.0.0/24" --> NODE3
+    NODE1 --> TRAEFIK --> APPS
+
+    style vps fill:#f0f4ff,stroke:#4a6cf7
+    style lan fill:#f0fff4,stroke:#38a169
+    style clients fill:#fff8f0,stroke:#dd6b20
 ```
-Mac / iPhone / any device
-        │
-        │  HTTPS + WebSocket (TS2021)
-        ▼
-headscale.shublab.com (Oracle VPS, 141.147.112.251)
-  - Coordination server (key exchange, node registry)
-  - Embedded DERP relay (fallback when direct WireGuard fails)
-  - STUN server (NAT traversal)
-        │
-        │  WireGuard (direct peer-to-peer after handshake)
-        ▼
-homelab nodes (192.168.0.32-34)
-  node1 advertises subnet route 192.168.0.0/24
-        │
-        ▼
-All homelab services (grafana, tandoor, longhorn, etc.)
-```
+
+**Control plane flow:** Devices register with headscale VPS via HTTPS/WebSocket (TS2021). VPS stores node keys and issues WireGuard configuration.
+
+**Data plane flow:** After handshake, WireGuard traffic is peer-to-peer (bypasses VPS). DERP relay used only when direct connection fails (NAT/firewall).
+
+**Subnet routing:** node1 advertises `192.168.0.0/24` — remote devices reach all homelab services without VPN on every node.
 
 ## Oracle Free Tier Instance
 
@@ -37,7 +66,7 @@ All homelab services (grafana, tandoor, longhorn, etc.)
 | Shape | VM.Standard.E2.1.Micro (Always Free) |
 | OS | Ubuntu 24.04 |
 | Region | uk-london-1 |
-| Public IP | 141.147.112.251 (ephemeral) |
+| Public IP | <vps-ip> (ephemeral) |
 | SSH user | ubuntu |
 
 ### Required firewall rules (Oracle Security List)
@@ -76,10 +105,10 @@ The playbook will:
 | Variable | Description | Default |
 |---|---|---|
 | `headscale_version` | Headscale release version | `0.28.0` |
-| `headscale_domain` | Public domain for headscale | `headscale.shublab.com` |
-| `headscale_vps_ip` | VPS public IP (for DERP config) | `141.147.112.251` |
+| `headscale_domain` | Public domain for headscale | `headscale.<domain>` |
+| `headscale_vps_ip` | VPS public IP (for DERP config) | `<vps-ip>` |
 | `headscale_acme_email` | Email for Let's Encrypt notifications | `""` |
-| `headscale_dns_base_domain` | MagicDNS base domain | `vpn.shublab.com` |
+| `headscale_dns_base_domain` | MagicDNS base domain | `vpn.<domain>` |
 
 ## Register devices
 
@@ -93,23 +122,23 @@ make tailscale
 ### Mac / Linux
 
 ```bash
-tailscale up --login-server=https://headscale.shublab.com --accept-routes
+tailscale up --login-server=https://headscale.<domain> --accept-routes
 # Visit the URL shown, then register the key:
-ssh ubuntu@141.147.112.251 "sudo headscale nodes register --user shubham --key <key>"
+ssh ubuntu@<vps-ip> "sudo headscale nodes register --user shubham --key <key>"
 ```
 
 ### iPhone / Android
 
 1. Install Tailscale app
 2. Tap account → "Use a different server"
-3. Enter `https://headscale.shublab.com`
+3. Enter `https://headscale.<domain>`
 4. Register the shown key on the VPS
 
 ## Day-to-day operations
 
 ```bash
 # SSH to VPS
-ssh ubuntu@141.147.112.251
+ssh ubuntu@<vps-ip>
 
 # List nodes
 sudo headscale nodes list
@@ -136,11 +165,11 @@ from headscale (they'll disconnect automatically). Does not terminate the VPS in
 
 ## Headplane UI
 
-Headplane runs in-cluster at `headplane.shublab.com/admin/` and connects to this VPS.
+Headplane runs in-cluster at `headplane.<domain>/admin/` and connects to this VPS.
 API key is stored in `infrastructure/base/networking/headplane/secret.sops.yaml`.
 
 To generate a new API key:
 ```bash
-ssh ubuntu@141.147.112.251 "sudo headscale apikeys create --expiration 8760h"
+ssh ubuntu@<vps-ip> "sudo headscale apikeys create --expiration 8760h"
 ```
 Then update the SOPS secret and push — Flux will apply it automatically.

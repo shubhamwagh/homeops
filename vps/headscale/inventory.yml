@@ -2,6 +2,6 @@
 all:
   hosts:
     headscale-vps:
-      ansible_host: 141.147.112.251
+      ansible_host: 1.2.3.4   # replace with your VPS public IP
       ansible_user: ubuntu
       ansible_ssh_private_key_file: ~/.ssh/id_ed25519
