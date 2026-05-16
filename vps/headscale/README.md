@@ -1,15 +1,15 @@
-# 🖥️ Headscale VPS Setup
+# Headscale VPS Setup
 
 Headscale coordination server on a public VPS — enables WireGuard VPN mesh
 accessible from any network (mobile, internet, coffee shop).
 
-## 🤔 Why a VPS?
+## Why a VPS?
 
 Headscale uses **TS2021** protocol (WebSocket upgrade). Cloudflare proxy strips
 WebSocket `Upgrade` headers even with "WebSockets" toggled on, making Cloudflare
 Tunnel fundamentally incompatible. A VPS with a direct public IP is required.
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -67,7 +67,7 @@ flowchart TD
 
 ---
 
-## 🖥️ Oracle Free Tier Instance
+## Oracle Free Tier Instance
 
 | Setting | Value |
 |---|---|
@@ -75,7 +75,7 @@ flowchart TD
 | OS | Ubuntu 24.04 |
 | SSH user | `ubuntu` |
 
-### 🔥 Required firewall rules (Oracle Security List)
+### Required firewall rules (Oracle Security List)
 
 | Protocol | Port | Purpose |
 |---|---|---|
@@ -89,7 +89,7 @@ flowchart TD
 
 ---
 
-## 🚀 Setup (fresh VPS)
+## Setup (fresh VPS)
 
 ```bash
 cd vps/headscale
@@ -112,7 +112,7 @@ The playbook:
 
 ---
 
-## ⚙️ Variables (vars.yml)
+## Variables (vars.yml)
 
 | Variable | Description | Example |
 |---|---|---|
@@ -120,13 +120,13 @@ The playbook:
 | `headscale_domain` | Public FQDN | `headscale.yourdomain.com` |
 | `headscale_vps_ip` | VPS public IP (for DERP) | `1.2.3.4` |
 | `headscale_acme_email` | Let's Encrypt email | `you@example.com` |
-| `headscale_dns_base_domain` | MagicDNS base (≠ headscale_domain) | `vpn.yourdomain.com` |
+| `headscale_dns_base_domain` | MagicDNS base (must differ from headscale_domain) | `vpn.yourdomain.com` |
 | `headscale_derp_region_code` | Short DERP region code | `oracle-london` |
 | `headscale_derp_region_name` | Display name in Tailscale UI | `Oracle London` |
 
 ---
 
-## 📱 Register devices
+## Register devices
 
 ### k3s nodes (automated)
 
@@ -135,7 +135,7 @@ The playbook:
 make tailscale
 ```
 
-### 💻 Mac / Linux
+### Mac / Linux
 
 ```bash
 tailscale up --login-server=https://headscale.<domain> --accept-routes
@@ -145,7 +145,7 @@ ssh ubuntu@<vps-ip> "sudo headscale nodes register --user shubham --key <key>"
 ssh ubuntu@<vps-ip> "sudo headscale nodes rename --identifier <id> my-macbook"
 ```
 
-### 📱 iPhone / Android
+### iPhone / Android
 
 1. Install Tailscale app
 2. Tap profile → **Log in** → **Use a different server**
@@ -154,7 +154,7 @@ ssh ubuntu@<vps-ip> "sudo headscale nodes rename --identifier <id> my-macbook"
 
 ---
 
-## 🔧 Day-to-day operations
+## Day-to-day operations
 
 ```bash
 # SSH to VPS
@@ -175,7 +175,7 @@ sudo journalctl -u headscale -f
 
 ---
 
-## 🗑️ Teardown
+## Teardown
 
 ```bash
 cd vps/headscale
@@ -187,7 +187,7 @@ All devices will disconnect automatically. Re-run install to restore.
 
 ---
 
-## 🖼️ Headplane UI
+## Headplane UI
 
 Headplane runs in-cluster at `headplane.<domain>/admin/` and manages this VPS.
 API key stored in `infrastructure/base/networking/headplane/secret.sops.yaml`.
