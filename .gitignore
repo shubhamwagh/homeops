@@ -16,3 +16,5 @@ age.agekey
 *.tmp
 *.log
 .secrets-plaintext
+vps/headscale/vars.yml
+vps/headscale/inventory.yml

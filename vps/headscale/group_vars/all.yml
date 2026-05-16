@@ -1,9 +1,13 @@
 ---
+# Default/example values — override in vars.yml (gitignored) for production
+# Copy vars.yml.example to vars.yml and fill in your values, then run:
+#   ansible-playbook playbooks/install.yml -e @vars.yml
+
 headscale_version: "0.28.0"
-headscale_domain: "headscale.example.com"   # your public domain for headscale
-headscale_vps_ip: "1.2.3.4"                 # your VPS public IP
-headscale_acme_email: ""                     # set to enable Let's Encrypt notifications
-headscale_dns_base_domain: "vpn.example.com" # MagicDNS base domain (must differ from headscale_domain)
+headscale_domain: "headscale.example.com"    # your public domain for headscale
+headscale_vps_ip: "1.2.3.4"                  # your VPS public IP
+headscale_acme_email: ""                      # set to enable Let's Encrypt notifications
+headscale_dns_base_domain: "vpn.example.com"  # MagicDNS base domain (must differ from headscale_domain)
 headscale_derp_region_id: 999
-headscale_derp_region_code: "oracle-london"
-headscale_derp_region_name: "Oracle London"
+headscale_derp_region_code: "vps"
+headscale_derp_region_name: "VPS DERP"

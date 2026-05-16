@@ -1,0 +1,8 @@
+---
+# Copy this file to inventory.yml (gitignored) and fill in your VPS details
+all:
+  hosts:
+    headscale-vps:
+      ansible_host: 1.2.3.4       # your VPS public IP
+      ansible_user: ubuntu         # SSH user (ubuntu for Oracle/AWS, root for Hetzner)
+      ansible_ssh_private_key_file: ~/.ssh/id_ed25519
