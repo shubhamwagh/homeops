@@ -81,10 +81,14 @@ copy-kubeconfig: $(INVENTORY)
 cilium-bootstrap:
 	helm repo add cilium https://helm.cilium.io/ 2>/dev/null || true
 	helm repo update cilium
-	helm upgrade --install cilium cilium/cilium \
+	@API=$$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}' | sed 's|https://||'); \
+	 K8S_HOST=$$(echo $$API | cut -d: -f1); \
+	 K8S_PORT=$$(echo $$API | cut -d: -f2); \
+	 echo "Using API server: $$K8S_HOST:$$K8S_PORT"; \
+	 helm upgrade --install cilium cilium/cilium \
 	  --version 1.17.3 --namespace kube-system \
-	  --set k8sServiceHost=10.43.0.1 \
-	  --set k8sServicePort=443 \
+	  --set k8sServiceHost=$$K8S_HOST \
+	  --set k8sServicePort=$$K8S_PORT \
 	  --set kubeProxyReplacement=true \
 	  --set bpf.masquerade=true \
 	  --set cgroup.autoMount.enabled=false \
