@@ -1,0 +1,141 @@
+---
+# tailscale.yml — Install Tailscale and register nodes with Oracle headscale
+#
+# Usage:
+#   cd infrastructure/metal
+#   HEADSCALE_PREAUTH_KEY=$(ssh ubuntu@141.147.112.251 \
+#     "sudo headscale preauthkeys create --user shubham --reusable --expiration 2h" \
+#     | tail -1) \
+#   ansible-playbook playbooks/tailscale.yml -e "preauth_key=$HEADSCALE_PREAUTH_KEY"
+#
+# Or via Makefile: make tailscale
+#
+# What it does:
+#   - Installs tailscale on all nodes
+#   - Connects to headscale.shublab.com using a pre-auth key (no manual registration)
+#   - control_plane[0] (node1) advertises subnet route 192.168.0.0/24
+#   - All other nodes accept routes
+
+- name: Install and configure Tailscale
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    headscale_url: "https://headscale.shublab.com"
+    subnet_route: "192.168.0.0/24"
+
+  tasks:
+    - name: Check if tailscale already installed
+      ansible.builtin.command: tailscale version
+      register: ts_version
+      failed_when: false
+      changed_when: false
+
+    - name: Download and run tailscale install script
+      ansible.builtin.shell: |
+        curl -fsSL https://tailscale.com/install.sh | sh
+      when: ts_version.rc != 0
+      changed_when: true
+
+    - name: Enable and start tailscaled
+      ansible.builtin.systemd:
+        name: tailscaled
+        enabled: true
+        state: started
+
+    - name: Enable IP forwarding (required for subnet routing)
+      ansible.builtin.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        sysctl_set: true
+        state: present
+        reload: true
+
+    - name: Connect control-plane node with subnet route advertisement
+      ansible.builtin.command: >
+        tailscale up
+        --login-server={{ headscale_url }}
+        --authkey={{ preauth_key }}
+        --advertise-routes={{ subnet_route }}
+        --accept-routes
+        --reset
+      when: inventory_hostname == groups['control_plane'][0]
+      changed_when: true
+
+    - name: Connect worker nodes
+      ansible.builtin.command: >
+        tailscale up
+        --login-server={{ headscale_url }}
+        --authkey={{ preauth_key }}
+        --accept-routes
+        --reset
+      when: inventory_hostname != groups['control_plane'][0]
+      changed_when: true
+
+    - name: Show tailscale status
+      ansible.builtin.command: tailscale status
+      register: ts_status
+      changed_when: false
+      failed_when: false
+
+    - name: Print tailscale status
+      ansible.builtin.debug:
+        msg: "{{ ts_status.stdout }}"
+
+
+- name: Approve subnet routes in headscale
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    headscale_host: "ubuntu@141.147.112.251"
+
+  tasks:
+    - name: List nodes in headscale
+      ansible.builtin.command: >
+        ssh -o StrictHostKeyChecking=no {{ headscale_host }}
+        "sudo headscale nodes list"
+      register: nodes_list
+      changed_when: false
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ nodes_list.stdout }}"
+
+    - name: Approve subnet routes for node1
+      ansible.builtin.shell: |
+        NODE_ID=$(ssh -o StrictHostKeyChecking=no {{ headscale_host }} \
+          "sudo headscale nodes list" | grep "homelab-hpg2-node1" | awk -F'|' '{print $1}' | tr -d ' ')
+        ssh -o StrictHostKeyChecking=no {{ headscale_host }} \
+          "sudo headscale nodes approve-routes --identifier $NODE_ID --routes 192.168.0.0/24"
+      changed_when: true
+      failed_when: false
+
+
+- name: Teardown Tailscale from all nodes
+  hosts: all
+  gather_facts: false
+  tags: [never, teardown]
+  become: true
+
+  tasks:
+    - name: Disconnect tailscale
+      ansible.builtin.command: tailscale down
+      failed_when: false
+      changed_when: true
+
+    - name: Stop tailscaled
+      ansible.builtin.systemd:
+        name: tailscaled
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Remove tailscale state
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/tailscale/tailscaled.state
+        - /var/lib/tailscale/tailscaled.lock

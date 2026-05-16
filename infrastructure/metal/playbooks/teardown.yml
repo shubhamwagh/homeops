@@ -50,6 +50,36 @@
       changed_when: true
 
 
+# ── tailscale cleanup ─────────────────────────────────────────
+- name: Remove Tailscale from all nodes
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Disconnect and stop tailscale
+      ansible.builtin.command: tailscale down
+      failed_when: false
+      changed_when: true
+      become: true
+
+    - name: Stop tailscaled
+      ansible.builtin.systemd:
+        name: tailscaled
+        state: stopped
+        enabled: false
+      failed_when: false
+      become: true
+
+    - name: Remove tailscale state
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/tailscale/tailscaled.state
+        - /var/lib/tailscale/tailscaled.lock
+      failed_when: false
+      become: true
+
+
 # ── local cleanup ─────────────────────────────────────────────
 - name: Clean up local kubeconfig
   hosts: localhost

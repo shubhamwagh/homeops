@@ -9,7 +9,8 @@ GITHUB_REPO ?= homeops
 
 .PHONY: tools configure install add-node teardown nodes copy-kubeconfig \
         bootstrap cilium-bootstrap ensure-age-key secrets gitops preflight \
-        flux-create-sops-secret flux-bootstrap flux-status flux-sync
+        flux-create-sops-secret flux-bootstrap flux-status flux-sync \
+        tailscale teardown-tailscale
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -201,6 +202,23 @@ gitops: preflight secrets flux-commit-secrets flux-create-sops-secret flux-boots
 	@echo ""
 	@echo "GitOps bootstrapped. Check status: make flux-status"
 	@echo "Back up age.agekey and .secrets-plaintext securely, then: rm .secrets-plaintext"
+
+# ─── tailscale / headscale ─────────────────────────────────────────────────
+
+# Install tailscale on all nodes and auto-register with Oracle headscale.
+# Generates a reusable pre-auth key (valid 2h) then runs the ansible playbook.
+# Usage: make tailscale
+tailscale: $(INVENTORY)
+	@echo "Generating headscale pre-auth key..."
+	@PREAUTH_KEY=$$(ssh -o StrictHostKeyChecking=no ubuntu@141.147.112.251 \
+	  "sudo headscale preauthkeys create --user shubham --reusable --expiration 2h" \
+	  | tail -1); \
+	 echo "Pre-auth key: $$PREAUTH_KEY"; \
+	 $(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/tailscale.yml -e "preauth_key=$$PREAUTH_KEY"
+
+# Remove tailscale from all nodes (does not remove nodes from headscale)
+teardown-tailscale: $(INVENTORY)
+	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/tailscale.yml --tags teardown
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 
