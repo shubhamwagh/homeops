@@ -1,0 +1,101 @@
+---
+# install.yml — Install and configure headscale on a fresh Ubuntu VPS
+#
+# Usage:
+#   cd vps/headscale
+#   ansible-playbook playbooks/install.yml
+#
+# Prerequisites:
+#   - Ubuntu 22.04 or 24.04 (x86_64 or aarch64)
+#   - SSH access as ubuntu user with your key
+#   - Ports 80, 443, 41641/udp open in cloud firewall + OS firewall
+#   - DNS A record: headscale_domain → VPS public IP (unproxied)
+
+- name: Install headscale on VPS
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Open firewall ports (iptables)
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: "{{ item.proto }}"
+        destination_port: "{{ item.port }}"
+        jump: ACCEPT
+        action: insert
+        rule_num: 1
+      loop:
+        - { proto: tcp, port: "80" }
+        - { proto: tcp, port: "443" }
+        - { proto: udp, port: "41641" }
+        - { proto: udp, port: "3478" }
+
+    - name: Save iptables rules
+      ansible.builtin.command: netfilter-persistent save
+      changed_when: true
+
+    - name: Download headscale deb
+      ansible.builtin.get_url:
+        url: "https://github.com/juanfont/headscale/releases/download/v{{ headscale_version }}/headscale_{{ headscale_version }}_linux_{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}.deb"
+        dest: /tmp/headscale.deb
+        mode: "0644"
+
+    - name: Install headscale
+      ansible.builtin.apt:
+        deb: /tmp/headscale.deb
+
+    - name: Write headscale config
+      ansible.builtin.template:
+        src: ../templates/config.yaml.j2
+        dest: /etc/headscale/config.yaml
+        owner: headscale
+        group: headscale
+        mode: "0640"
+      notify: Restart headscale
+
+    - name: Enable and start headscale
+      ansible.builtin.systemd:
+        name: headscale
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart headscale
+      ansible.builtin.systemd:
+        name: headscale
+        state: restarted
+
+
+- name: Post-install setup
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Wait for headscale to be healthy
+      ansible.builtin.uri:
+        url: "https://{{ headscale_domain }}/health"
+        validate_certs: true
+        status_code: 200
+      register: health
+      until: health.status == 200
+      retries: 30
+      delay: 10
+      delegate_to: localhost
+      become: false
+
+    - name: Create default user
+      ansible.builtin.command: headscale users create shubham
+      register: user_create
+      failed_when: user_create.rc != 0 and 'already exists' not in user_create.stderr
+      changed_when: user_create.rc == 0
+
+    - name: Show headscale status
+      ansible.builtin.command: headscale nodes list
+      register: nodes
+      changed_when: false
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ nodes.stdout }}"

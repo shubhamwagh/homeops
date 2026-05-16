@@ -1,0 +1,34 @@
+---
+# teardown.yml — Remove headscale from VPS
+#
+# Usage:
+#   cd vps/headscale
+#   ansible-playbook playbooks/teardown.yml
+
+- name: Teardown headscale
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Stop and disable headscale
+      ansible.builtin.systemd:
+        name: headscale
+        enabled: false
+        state: stopped
+      ignore_errors: true
+
+    - name: Remove headscale package
+      ansible.builtin.apt:
+        name: headscale
+        state: absent
+        purge: true
+
+    - name: Remove headscale data
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/headscale
+        - /etc/headscale
+        - /var/run/headscale

@@ -1,0 +1,9 @@
+---
+headscale_version: "0.28.0"
+headscale_domain: "headscale.shublab.com"
+headscale_vps_ip: "141.147.112.251"
+headscale_acme_email: ""          # set to enable Let's Encrypt notifications
+headscale_dns_base_domain: "vpn.shublab.com"
+headscale_derp_region_id: 999
+headscale_derp_region_code: "oracle-london"
+headscale_derp_region_name: "Oracle London"

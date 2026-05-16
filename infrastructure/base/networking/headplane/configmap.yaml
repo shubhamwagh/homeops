@@ -14,6 +14,6 @@ data:
       disable_api_key_login: false
 
     headscale:
-      url: "http://headscale:8080"
+      url: "https://headscale.shublab.com"
       api_key_path: "/secrets/api-key"
       config_strict: false
