@@ -9,7 +9,7 @@ Secrets encrypted with SOPS+age and committed to git. Single `make` command to i
 
 ```mermaid
 flowchart TD
-    subgraph vps["☁️ Oracle VPS  ·  headscale.shublab.com  ·  141.147.112.251"]
+    subgraph vps["☁️ Oracle VPS  ·  headscale.shublab.com"]
         HS["🎯 Headscale\n• TS2021 key exchange\n• node registry\n• ACL policy\n• MagicDNS :443"]
         DERP["🔀 DERP Relay\nembedded fallback\nWireGuard over TCP :443"]
         STUN["📡 STUN :3478\nNAT traversal"]

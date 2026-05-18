@@ -95,7 +95,7 @@ Three unproxied A records (orange cloud **OFF**):
 | --- | --- | --- | --- |
 | A | `*` | `192.168.0.2` | wildcard → Cilium VIP |
 | A | `shublab.com` | `192.168.0.2` | apex → Cilium VIP |
-| A | `headscale` | `141.147.112.251` | overrides wildcard → Oracle VPS |
+| A | `headscale` | `<vps-ip>` | overrides wildcard → Oracle VPS |
 
 ---
 
