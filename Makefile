@@ -112,6 +112,7 @@ preflight:
 	@command -v sops      >/dev/null || (echo "MISSING: sops"      && exit 1)
 	@command -v age       >/dev/null || (echo "MISSING: age"       && exit 1)
 	@command -v age-keygen >/dev/null || (echo "MISSING: age-keygen" && exit 1)
+	@command -v htpasswd  >/dev/null || (echo "MISSING: htpasswd (install apache2-utils or httpd-tools)" && exit 1)
 	@test -n "$(GITHUB_TOKEN)"     || (echo "MISSING env: GITHUB_TOKEN"     && exit 1)
 	@test -n "$(CLOUDFLARE_TOKEN)" || (echo "MISSING env: CLOUDFLARE_TOKEN" && exit 1)
 	@kubectl cluster-info --request-timeout=5s >/dev/null 2>&1 || (echo "MISSING: kubectl cannot reach cluster - run make bootstrap first" && exit 1)
@@ -145,9 +146,9 @@ secrets: ensure-age-key
 	 TANDOOR_DB_PASS=$$(openssl rand -base64 24); \
 	 SEARXNG_SECRET=$$(openssl rand -hex 32); \
 	 LONGHORN_PASS=$$(openssl rand -base64 18); \
-	 LONGHORN_HTPASSWD=$$(htpasswd -nb admin "$$LONGHORN_PASS" | sed 's/\$$/\$\$\$\$/g'); \
+	 LONGHORN_HTPASSWD=$$(htpasswd -nb admin "$$LONGHORN_PASS"); \
 	 TRAEFIK_PASS=$$(openssl rand -base64 18); \
-	 TRAEFIK_HTPASSWD=$$(htpasswd -nb admin "$$TRAEFIK_PASS" | sed 's/\$$/\$\$\$\$/g'); \
+	 TRAEFIK_HTPASSWD=$$(htpasswd -nb admin "$$TRAEFIK_PASS"); \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: grafana-admin-secret\n  namespace: monitoring\nstringData:\n  admin-password: "%s"\n' \
 	   "$$GRAFANA_PASS" > infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: tandoor-secret\n  namespace: tandoor\nstringData:\n  SECRET_KEY: "%s"\n  POSTGRES_PASSWORD: "%s"\n' \
@@ -214,9 +215,12 @@ gitops: preflight secrets flux-commit-secrets flux-create-sops-secret flux-boots
 # Usage: make tailscale
 tailscale: $(INVENTORY)
 	@echo "Generating headscale pre-auth key..."
-	@PREAUTH_KEY=$$(ssh -o StrictHostKeyChecking=no ubuntu@141.147.112.251 \
-	  "sudo headscale preauthkeys create --user shubham --reusable --expiration 2h" \
-	  | tail -1); \
+	@VPS_INV=vps/headscale/inventory.yml; \
+	 VPS_IP=$$(yq '.all.hosts.headscale-vps.ansible_host' $$VPS_INV); \
+	 VPS_USER=$$(yq '.all.hosts.headscale-vps.ansible_user' $$VPS_INV); \
+	 PREAUTH_KEY=$$(ssh -o StrictHostKeyChecking=no $$VPS_USER@$$VPS_IP \
+	   "sudo headscale preauthkeys create --user 1 --reusable --expiration 2h" \
+	   | tail -1); \
 	 echo "Pre-auth key: $$PREAUTH_KEY"; \
 	 $(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/tailscale.yml -e "preauth_key=$$PREAUTH_KEY"
 
