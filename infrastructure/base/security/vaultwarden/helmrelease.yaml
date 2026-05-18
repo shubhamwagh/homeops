@@ -38,6 +38,8 @@ spec:
       SIGNUPS_ALLOWED: "true"
       INVITATIONS_ALLOWED: "true"
       SHOW_PASSWORD_HINT: "false"
+      SIGNUPS_VERIFY: "false"
+      REQUIRE_DEVICE_EMAIL: "false"
     persistence:
       enabled: true
       storageClass: longhorn
