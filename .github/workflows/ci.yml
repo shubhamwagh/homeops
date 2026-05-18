@@ -36,7 +36,7 @@ jobs:
       - name: Verify SOPS files are encrypted
         run: |
           FAIL=0
-          for f in $(find . -name "*.sops.yaml"); do
+          for f in $(find . -name "*.sops.yaml" ! -name ".sops.yaml"); do
             if ! grep -q "^sops:" "$f" && ! grep -q "ENC\[" "$f"; then
               echo "ERROR: $f missing SOPS encryption metadata"
               FAIL=1
