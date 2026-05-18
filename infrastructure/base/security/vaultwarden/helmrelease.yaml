@@ -40,6 +40,7 @@ spec:
       SHOW_PASSWORD_HINT: "false"
       SIGNUPS_VERIFY: "false"
       REQUIRE_DEVICE_EMAIL: "false"
+      ADMIN_TOKEN: "homelab-admin-2026"
     persistence:
       enabled: true
       storageClass: longhorn
