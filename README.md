@@ -1,6 +1,9 @@
 # homeops
 
+> Enterprise-grade Kubernetes homelab deployed via GitOps
+
 [![CI](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml/badge.svg)](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml)
+[![Cluster Health](https://github.com/shubhamwagh/homeops/actions/workflows/cluster-health.yml/badge.svg)](https://github.com/shubhamwagh/homeops/actions/workflows/cluster-health.yml)
 
 Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI+L2LB, Traefik ingress, cert-manager + Let's Encrypt, Longhorn storage, kube-prometheus-stack, and Headscale VPN.
 
@@ -110,33 +113,53 @@ make tools
 # 2. Configure cluster — enter node IPs, SSH key, cluster name
 make configure
 
-# 3. Install k3s + Cilium CNI
+# 3. Deploy headscale on Oracle VPS
+make headscale-install
+
+# 4. Install k3s + Cilium CNI on bare metal
 make bootstrap
 
-# 4. Bootstrap GitOps — generates+encrypts all secrets, bootstraps Flux
+# 5. Bootstrap GitOps — generates+encrypts all secrets, bootstraps Flux
 GITHUB_TOKEN=xxx CLOUDFLARE_TOKEN=xxx make gitops
 
-# 5. Install Tailscale on all nodes + register with headscale
+# 6. Wait for Flux to reconcile (~5 min), then verify
+make flux-status
+
+# 7. Register all nodes with headscale
 make tailscale
+
+# 8. Approve subnet route (auto-detects node1)
+make headscale-approve-routes
+
+# 9. Verify everything
+make check
 ```
 
-After step 4, Flux reconciles the repo and deploys everything automatically.
-Back up `age.agekey` securely — without it encrypted secrets cannot be decrypted.
+After step 5, back up `age.agekey` and delete `.secrets-plaintext`:
 
-After step 5, all nodes appear in Headplane at `headplane.shublab.com/admin/`.
+```bash
+cp age.agekey ~/backups/age.agekey   # store securely — losing this = losing all secrets
+rm .secrets-plaintext
+```
+
+After step 8, all nodes appear in Headplane at `headplane.shublab.com/admin/`.
+Register Mac/iPhone manually — see [VPN section](#vpn--headscale-on-oracle-vps).
 
 ---
 
 ## VPN — Headscale on Oracle VPS
 
 ```bash
-# Deploy headscale to a fresh Ubuntu VPS
-make headscale-install
-
-# Register remote devices
-#   Mac/Linux: tailscale up --login-server=https://headscale.shublab.com --accept-routes
-#   iPhone:    Tailscale app → account → use custom login server
+make headscale-install          # deploy to Oracle VPS
+make tailscale                  # register all nodes
+make headscale-approve-routes   # approve 192.168.0.0/24 subnet on node1
+make headscale-teardown         # remove headscale from VPS
 ```
+
+Register remote devices:
+
+- **Mac/Linux:** `tailscale up --login-server=https://headscale.shublab.com --accept-routes`
+- **iPhone:** Tailscale app → profile → Log in → Use a different server
 
 See [`vps/headscale/README.md`](vps/headscale/README.md) for full details.
 
@@ -162,7 +185,19 @@ make flux-status      # show all Flux resources
 make flux-sync        # force reconcile from git
 make nodes            # kubectl get nodes -o wide
 make tailscale        # re-provision tailscale on all nodes
+make check            # full health check — nodes, flux, services, headscale
 ```
+
+### Cluster Health badge
+
+The **Cluster Health** badge runs `make check` every 30 minutes via a GitHub Actions self-hosted runner on node1. To enable it:
+
+```bash
+# On node1 — follow GitHub → Settings → Actions → Runners → New self-hosted runner
+# Select: Linux · x64, then run the provided commands on node1
+```
+
+Until the runner is registered the badge shows no status.
 
 ---
 
