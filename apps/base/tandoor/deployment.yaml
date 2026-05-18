@@ -18,6 +18,9 @@ spec:
         app: tandoor
     spec:
       dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
         searches:
           - tandoor.svc.cluster.local
           - svc.cluster.local
