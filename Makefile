@@ -13,7 +13,7 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         bootstrap cilium-bootstrap ensure-age-key secrets gitops preflight \
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
         tailscale teardown-tailscale \
-        headscale-install headscale-teardown
+        headscale-install headscale-teardown headscale-approve-routes
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -237,6 +237,17 @@ headscale-install:
 	@sops -d vps/headscale/group_vars/all.yml > /tmp/.hs-vars.yml
 	@cd vps/headscale && $(ANSIBLE) -i /tmp/.hs-inventory.yml playbooks/install.yml -e @/tmp/.hs-vars.yml; \
 	 STATUS=$$?; rm -f /tmp/.hs-inventory.yml /tmp/.hs-vars.yml; exit $$STATUS
+
+# Approve subnet route 192.168.0.0/24 for node1 (auto-detects by hostname prefix "homelab")
+headscale-approve-routes:
+	@VPS_INV=vps/headscale/inventory.yml; \
+	 VPS_IP=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_host'); \
+	 VPS_USER=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_user'); \
+	 NODE_ID=$$(ssh -o StrictHostKeyChecking=no $$VPS_USER@$$VPS_IP \
+	   "sudo headscale nodes list --output json" | jq -r '.[] | select(.name | startswith("homelab")) | .id' | head -1); \
+	 echo "Approving routes for node ID: $$NODE_ID"; \
+	 ssh $$VPS_USER@$$VPS_IP \
+	   "sudo headscale nodes approve-routes --identifier $$NODE_ID --routes 192.168.0.0/24"
 
 # Uninstall headscale from the VPS
 headscale-teardown:
