@@ -54,8 +54,8 @@ jobs:
           done
           exit $FAIL
 
-      - name: Kustomize build — clusters/staging
-        run: kustomize build clusters/staging
+      - name: Kustomize build — clusters/staging/flux-system
+        run: kustomize build clusters/staging/flux-system
 
       - name: Kustomize build — infrastructure/base
         run: |
