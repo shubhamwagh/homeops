@@ -13,7 +13,8 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         bootstrap cilium-bootstrap ensure-age-key secrets gitops preflight \
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
         tailscale teardown-tailscale \
-        headscale-install headscale-teardown headscale-approve-routes
+        headscale-install headscale-teardown headscale-approve-routes \
+        check
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -255,6 +256,49 @@ headscale-teardown:
 	@sops -d vps/headscale/group_vars/all.yml > /tmp/.hs-vars.yml
 	@cd vps/headscale && $(ANSIBLE) -i /tmp/.hs-inventory.yml playbooks/teardown.yml -e @/tmp/.hs-vars.yml; \
 	 STATUS=$$?; rm -f /tmp/.hs-inventory.yml /tmp/.hs-vars.yml; exit $$STATUS
+
+# ─── health check ──────────────────────────────────────────────────────────
+
+SERVICES := \
+	https://home.shublab.com \
+	https://grafana.shublab.com \
+	https://longhorn.shublab.com \
+	https://traefik.shublab.com \
+	https://vault.shublab.com \
+	https://search.shublab.com \
+	https://tandoor.shublab.com \
+	https://headscale.shublab.com/health
+
+check:
+	@PASS=0; FAIL=0; \
+	echo ""; \
+	echo "── Nodes ──────────────────────────────────────────"; \
+	kubectl get nodes -o wide; \
+	echo ""; \
+	echo "── Flux Kustomizations ────────────────────────────"; \
+	flux get kustomizations -A; \
+	echo ""; \
+	echo "── Flux HelmReleases ──────────────────────────────"; \
+	flux get helmreleases -A; \
+	echo ""; \
+	echo "── Service Health ─────────────────────────────────"; \
+	for url in $(SERVICES); do \
+	  CODE=$$(curl -sk -o /dev/null -w "%{http_code}" --max-time 5 "$$url"); \
+	  case "$$CODE" in \
+	    200|204|301|302|401) echo "  ✓  $$url  [$$CODE]"; PASS=$$((PASS+1));; \
+	    *)                   echo "  ✗  $$url  [$$CODE]"; FAIL=$$((FAIL+1));; \
+	  esac; \
+	done; \
+	echo ""; \
+	echo "── Headscale Nodes ────────────────────────────────"; \
+	VPS_INV=vps/headscale/inventory.yml; \
+	VPS_IP=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_host'); \
+	VPS_USER=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_user'); \
+	ssh -o StrictHostKeyChecking=no $$VPS_USER@$$VPS_IP "sudo headscale nodes list"; \
+	echo ""; \
+	echo "── Summary ────────────────────────────────────────"; \
+	echo "  Services: $$PASS passed, $$FAIL failed"; \
+	[ $$FAIL -eq 0 ] || exit 1
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 

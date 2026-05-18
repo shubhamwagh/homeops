@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          # kustomize
+          curl -sL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          # yamllint
+          pip install --quiet yamllint
+
+      - name: Lint YAML
+        run: |
+          yamllint -d "{extends: default, rules: {line-length: disable, truthy: disable, comments: disable, document-start: disable}}" \
+            $(find . -name "*.yml" -o -name "*.yaml" \
+              | grep -v ".sops.yaml" \
+              | grep -v "vps/headscale/inventory.yml" \
+              | grep -v "vps/headscale/group_vars" \
+              | grep -v ".github/workflows" \
+              | head -60)
+
+      - name: Verify SOPS files are encrypted
+        run: |
+          FAIL=0
+          for f in $(find . -name "*.sops.yaml"); do
+            if ! grep -q "^sops:" "$f" && ! grep -q "ENC\[" "$f"; then
+              echo "ERROR: $f missing SOPS encryption metadata"
+              FAIL=1
+            else
+              echo "OK: $f"
+            fi
+          done
+          for f in vps/headscale/inventory.yml vps/headscale/group_vars/all.yml; do
+            if ! grep -q "ENC\[" "$f"; then
+              echo "ERROR: $f is not SOPS encrypted"
+              FAIL=1
+            else
+              echo "OK: $f"
+            fi
+          done
+          exit $FAIL
+
+      - name: Kustomize build — clusters/staging
+        run: kustomize build clusters/staging
+
+      - name: Kustomize build — infrastructure/base
+        run: |
+          for dir in $(find infrastructure/base -name kustomization.yaml -exec dirname {} \;); do
+            echo "Building $dir..."
+            kustomize build "$dir" > /dev/null
+          done
+
+      - name: Kustomize build — apps/base
+        run: |
+          for dir in $(find apps/base -name kustomization.yaml -exec dirname {} \;); do
+            echo "Building $dir..."
+            kustomize build "$dir" > /dev/null
+          done

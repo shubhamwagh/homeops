@@ -1,5 +1,7 @@
 # homeops
 
+[![CI](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml/badge.svg)](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml)
+
 Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI+L2LB, Traefik ingress, cert-manager + Let's Encrypt, Longhorn storage, kube-prometheus-stack, and Headscale VPN.
 
 ---
