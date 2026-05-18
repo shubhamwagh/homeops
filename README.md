@@ -3,7 +3,6 @@
 > Enterprise-grade Kubernetes homelab deployed via GitOps
 
 [![CI](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml/badge.svg)](https://github.com/shubhamwagh/homeops/actions/workflows/ci.yml)
-[![Cluster Health](https://github.com/shubhamwagh/homeops/actions/workflows/cluster-health.yml/badge.svg)](https://github.com/shubhamwagh/homeops/actions/workflows/cluster-health.yml)
 
 Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI+L2LB, Traefik ingress, cert-manager + Let's Encrypt, Longhorn storage, kube-prometheus-stack, and Headscale VPN.
 
@@ -188,16 +187,6 @@ make tailscale        # re-provision tailscale on all nodes
 make check            # full health check — nodes, flux, services, headscale
 ```
 
-### Cluster Health badge
-
-The **Cluster Health** badge runs `make check` every 30 minutes via a GitHub Actions self-hosted runner on node1. To enable it:
-
-```bash
-# On node1 — follow GitHub → Settings → Actions → Runners → New self-hosted runner
-# Select: Linux · x64, then run the provided commands on node1
-```
-
-Until the runner is registered the badge shows no status.
 
 ---
 
