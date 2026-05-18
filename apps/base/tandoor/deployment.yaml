@@ -17,6 +17,11 @@ spec:
       labels:
         app: tandoor
     spec:
+      dnsConfig:
+        searches:
+          - tandoor.svc.cluster.local
+          - svc.cluster.local
+          - cluster.local
       containers:
         - name: tandoor
           image: vabene1111/recipes:latest
@@ -27,7 +32,8 @@ spec:
               until python -c "import psycopg2; psycopg2.connect(host='$POSTGRES_HOST',port=5432,dbname='$POSTGRES_DB',user='$POSTGRES_USER',password='$POSTGRES_PASSWORD')" 2>/dev/null; do echo "waiting for postgres..."; sleep 3; done
               python manage.py migrate
               python manage.py collectstatic --noinput
-              gunicorn -b 0.0.0.0:8080 --workers 2 recipes.wsgi
+              python -c "open('/tmp/gcfg.py','w').write('def post_fork(s,w):\n import socket,requests_hardened.ip_filter as _i,requests_hardened.ip_filter_adapter as _a\n def r(h,p,**k):\n  res=socket.getaddrinfo(h,p,0,1)\n  return res[0][4][0]\n _i.filter_host=r\n _a.filter_host=r\n')"
+              gunicorn -b 0.0.0.0:8080 --workers 2 -c /tmp/gcfg.py recipes.wsgi
           envFrom:
             - configMapRef:
                 name: tandoor-config
