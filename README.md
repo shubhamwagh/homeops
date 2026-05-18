@@ -187,7 +187,6 @@ make tailscale        # re-provision tailscale on all nodes
 make check            # full health check — nodes, flux, services, headscale
 ```
 
-
 ---
 
 ## Stack
