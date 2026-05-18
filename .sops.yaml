@@ -2,3 +2,9 @@ creation_rules:
   - path_regex: .*.sops.yaml
     age: >-
       age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr
+  - path_regex: vps/headscale/inventory\.yml
+    age: >-
+      age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr
+  - path_regex: vps/headscale/group_vars/all\.yml
+    age: >-
+      age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr

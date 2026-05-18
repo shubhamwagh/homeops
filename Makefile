@@ -7,10 +7,13 @@ PLAYBOOKS  := $(METAL_DIR)/playbooks
 GITHUB_USER ?= shubhamwagh
 GITHUB_REPO ?= homeops
 
+export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
+
 .PHONY: tools configure install add-node teardown nodes copy-kubeconfig \
         bootstrap cilium-bootstrap ensure-age-key secrets gitops preflight \
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
-        tailscale teardown-tailscale
+        tailscale teardown-tailscale \
+        headscale-install headscale-teardown
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -216,8 +219,8 @@ gitops: preflight secrets flux-commit-secrets flux-create-sops-secret flux-boots
 tailscale: $(INVENTORY)
 	@echo "Generating headscale pre-auth key..."
 	@VPS_INV=vps/headscale/inventory.yml; \
-	 VPS_IP=$$(yq '.all.hosts.headscale-vps.ansible_host' $$VPS_INV); \
-	 VPS_USER=$$(yq '.all.hosts.headscale-vps.ansible_user' $$VPS_INV); \
+	 VPS_IP=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_host'); \
+	 VPS_USER=$$(sops -d $$VPS_INV | yq '.all.hosts.headscale-vps.ansible_user'); \
 	 PREAUTH_KEY=$$(ssh -o StrictHostKeyChecking=no $$VPS_USER@$$VPS_IP \
 	   "sudo headscale preauthkeys create --user 1 --reusable --expiration 2h" \
 	   | tail -1); \
@@ -227,6 +230,20 @@ tailscale: $(INVENTORY)
 # Remove tailscale from all nodes (does not remove nodes from headscale)
 teardown-tailscale: $(INVENTORY)
 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOKS)/tailscale.yml --tags teardown
+
+# Install headscale on the VPS (decrypts inventory + vars on the fly)
+headscale-install:
+	@sops -d vps/headscale/inventory.yml > /tmp/.hs-inventory.yml
+	@sops -d vps/headscale/group_vars/all.yml > /tmp/.hs-vars.yml
+	@cd vps/headscale && $(ANSIBLE) -i /tmp/.hs-inventory.yml playbooks/install.yml -e @/tmp/.hs-vars.yml; \
+	 STATUS=$$?; rm -f /tmp/.hs-inventory.yml /tmp/.hs-vars.yml; exit $$STATUS
+
+# Uninstall headscale from the VPS
+headscale-teardown:
+	@sops -d vps/headscale/inventory.yml > /tmp/.hs-inventory.yml
+	@sops -d vps/headscale/group_vars/all.yml > /tmp/.hs-vars.yml
+	@cd vps/headscale && $(ANSIBLE) -i /tmp/.hs-inventory.yml playbooks/teardown.yml -e @/tmp/.hs-vars.yml; \
+	 STATUS=$$?; rm -f /tmp/.hs-inventory.yml /tmp/.hs-vars.yml; exit $$STATUS
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 

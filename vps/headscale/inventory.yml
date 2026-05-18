@@ -1,7 +1,21 @@
----
 all:
-  hosts:
-    headscale-vps:
-      ansible_host: 1.2.3.4   # replace with your VPS public IP
-      ansible_user: ubuntu
-      ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+    hosts:
+        headscale-vps:
+            ansible_host: ENC[AES256_GCM,data:Ip/7ZDpElO44rBRyagws,iv:+6ZWXkatZRErbvKbufW5FPnBKTaBcW/G6v3l21EadYk=,tag:RKwYW+GXFY3W4oQu7NofOA==,type:str]
+            ansible_user: ENC[AES256_GCM,data:RHi0VFWu,iv:FXwvURI96oP+nYrEo1iAO5CQgVAgMvALfKFtsEDTCyQ=,tag:Pdiozub9gFV/3HZWRylB3Q==,type:str]
+            ansible_ssh_private_key_file: ENC[AES256_GCM,data:OlLqrMedW/qHeQz1tY+5XZc=,iv:IFsmfptK4BbLRCogx4d/mrqize7faT/B0Loi8BxUAsY=,tag:2yQaXPpUmW6PD+EuBds+LA==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBtVDgxWE9TVG5GaVgyUm5L
+            Sm9YS1pHdS80eTFucHNhRFJ6ZXRvMGxiTm44Clhqa1JXWHUxRnU0THFXME5SSjMv
+            YVhLUnRTT1NWYTRreFo3ZE5QZG9YN00KLS0tIHRIaEVpdjRCRkphUlAzYmRTd0Fi
+            blJWUWYwUGxTSFRtblFUUVFMNncxU0kKZ8dOYMYhLshIymlvdVsMC9EBDcX4QdfR
+            +c6e9zDMAqbQfShd9b1AZhthCC69niDtXYAFjSOCMy8EBzv4PRlodw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr
+    lastmodified: "2026-05-18T13:55:09Z"
+    mac: ENC[AES256_GCM,data:By/y3JH+hotFA5v8PBAt/mv5c6ocwcANmarSTHirLCxxJFYTlN4osU+AYAtfl7vBktMD0+MxR8IY4QVfcQlhG1kZzuI2myNEX42VH3R6OLpOQCtkrV9jnDv/Mq8kQFMe8DYjROsxxx7uySVPy5BI4lRiWHpNxiIvHRsAYRAVpl4=,iv:Lnvq+VAZW4bFC6As2BL5LDagmBGlK+U3Q7pt86g9VJk=,tag:lpZglNypeyfgG0urBP4iDA==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.13.0

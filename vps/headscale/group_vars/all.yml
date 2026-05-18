@@ -1,13 +1,23 @@
----
-# Default/example values — override in vars.yml (gitignored) for production
-# Copy vars.yml.example to vars.yml and fill in your values, then run:
-#   ansible-playbook playbooks/install.yml -e @vars.yml
-
-headscale_version: "0.28.0"
-headscale_domain: "headscale.example.com"    # your public domain for headscale
-headscale_vps_ip: "1.2.3.4"                  # your VPS public IP
-headscale_acme_email: ""                      # set to enable Let's Encrypt notifications
-headscale_dns_base_domain: "vpn.example.com"  # MagicDNS base domain (must differ from headscale_domain)
-headscale_derp_region_id: 999
-headscale_derp_region_code: "vps"
-headscale_derp_region_name: "VPS DERP"
+headscale_version: ENC[AES256_GCM,data:KRi/gqHg,iv:DOmbbLJAFhNbPvryuS8rymhoNh3TwsKEOLqV/oaIb2U=,tag:fHIbvsMNl4ewiNRPSgcqwA==,type:str]
+headscale_domain: ENC[AES256_GCM,data:Rgujct28UZlURLNlYHZH8kZonhVM,iv:/3PYfK2TD/87SfKdUoJy/ab+hraAXiMFktrqUXKCx+4=,tag:TTCM0eJ7ZXMYYbnuc5UuVA==,type:str]
+headscale_vps_ip: ENC[AES256_GCM,data:j8MQGYejTNbh7GkeygTT,iv:Jj6J9WRvdFBE76CRMxrBHEW+riJCii81I4+A/1alI5U=,tag:EJwpU/uaDhLwU0Ss+KbOLw==,type:str]
+headscale_acme_email: ""
+headscale_dns_base_domain: ENC[AES256_GCM,data:qS90A6pU5l007aWMzJ8f,iv:U1UblJMorYkFWhslhCtxsCKZNVUYTXrN9WFj8/GXn8Q=,tag:RWvhzfxiEzbY5pG/WFZJYg==,type:str]
+headscale_derp_region_id: ENC[AES256_GCM,data:7Fpe,iv:0Woc5tDi64izzmsAXpDGoWI8q4+KT5bbMuIK4LiDbDo=,tag:LiNZ7bpzH71mQUxUzrTjQg==,type:int]
+headscale_derp_region_code: ENC[AES256_GCM,data:5seaUcgqwAzeQae/vQ==,iv:UYKagwwQTR3k/5a+ozId5FZvWQJQobdHFdU9f2b+tcE=,tag:KMNv7pSfPG27ugHjFHj+eQ==,type:str]
+headscale_derp_region_name: ENC[AES256_GCM,data:6wAkDMO6FZEOkGMoiw==,iv:ltXRk51nH2jhCzR3b85jIopJvG4fIF0KoZuO1wcHL4w=,tag:Ubxt/ipM844pBkqQZaBcjw==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB3U0hPTnN3ZjVkMDBYb0x1
+            cm5Sb2w5SzVlYStwa1RzU3owZElxU2lVK0VZCm9wUDIrTXZaMVgweDNlTlk1Vjdv
+            U09DbGxZVnNVYVdGamNVemoyQmd0V1UKLS0tIHNMNFgwcVFOTTZGQjZXcTJaeDFt
+            MzdIc3AyM0JxTVgxM1pqOVVWZmVxdE0KbZC1xVvw5rN3NYwVRDMLy3nL9ssrLvO+
+            l7btPb/PDjY24cJB2Mnp2bKYKQZ4siubl2wvotxN7B1FbmE+ehYzoA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr
+    lastmodified: "2026-05-18T14:04:14Z"
+    mac: ENC[AES256_GCM,data:L7BJvna+zlOPv4XgmJkgcjX1iMmIvOOaeQDHHrTilWhdBDXqbZGajwvJYQQL8hYkEgVSctl4XtGMdWeb+8OsCUotnOxhP0RguO1MQagJIG4QkO52u8U4a7C9Q6Zy6TGfCJBLELvr40W+7yQ5DLatyUhv6Fz0Qas4yHtQLl0YtTA=,iv:3MygsnyUjaanQKrrcMQRTB2OIrltcklMD5Drg1yHQ2g=,tag:wT0FapGk62wcQGAWGyYisg==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.13.0
