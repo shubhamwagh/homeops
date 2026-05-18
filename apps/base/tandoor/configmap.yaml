@@ -12,4 +12,4 @@ data:
   ALLOWED_HOSTS: "tandoor.shublab.com"
   CSRF_TRUSTED_ORIGINS: "https://tandoor.shublab.com"
   ENABLE_SIGNUP: "0"
-  GUNICORN_MEDIA: "0"
+  GUNICORN_MEDIA: "1"
