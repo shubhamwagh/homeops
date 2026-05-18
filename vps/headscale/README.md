@@ -1,11 +1,11 @@
-# 🎯 Headscale VPS
+# Headscale VPS
 
 Headscale coordination server on a public Oracle VPS — WireGuard mesh accessible from any network.
 Secrets encrypted with SOPS+age and committed to git. Single `make` command to install or teardown.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -37,7 +37,7 @@ flowchart TD
     style clients fill:#3a2a1a,stroke:#cc8844,color:#ffe0c0
 ```
 
-### 🚦 Traffic flows
+### Traffic flows
 
 | Step | Path | Protocol | Port |
 | --- | --- | --- | --- |
@@ -49,20 +49,20 @@ flowchart TD
 
 ---
 
-## 🔐 Secrets & Config
+## Secrets & Config
 
 All sensitive values are SOPS+age encrypted and committed to git. **No `.example` files to copy.**
 
 ```text
 vps/headscale/
-├── inventory.yml          # 🔐 SOPS encrypted  — VPS IP, SSH user
-├── group_vars/all.yml     # 🔐 SOPS encrypted  — headscale domain, region, version
-├── ansible.cfg            # not sensitive       — SSH defaults
+├── inventory.yml          # SOPS encrypted  — VPS IP, SSH user
+├── group_vars/all.yml     # SOPS encrypted  — headscale domain, region, version
+├── ansible.cfg            # not sensitive   — SSH defaults
 ├── playbooks/
-│   ├── install.yml        # not sensitive       — ansible tasks
-│   └── teardown.yml       # not sensitive       — ansible tasks
+│   ├── install.yml        # not sensitive   — ansible tasks
+│   └── teardown.yml       # not sensitive   — ansible tasks
 └── templates/
-    └── config.yaml.j2     # not sensitive       — headscale config template
+    └── config.yaml.j2     # not sensitive   — headscale config template
 ```
 
 ### Edit encrypted files
@@ -79,7 +79,7 @@ sops -d vps/headscale/group_vars/all.yml
 
 ---
 
-## ☁️ Oracle Free Tier Instance
+## Oracle Free Tier Instance
 
 | Setting | Value |
 | --- | --- |
@@ -102,7 +102,7 @@ sops -d vps/headscale/group_vars/all.yml
 
 ---
 
-## 🚀 First-time Setup
+## First-time Setup
 
 ### Prerequisites
 
@@ -112,8 +112,6 @@ sops -d vps/headscale/group_vars/all.yml
 - `age.agekey` present in homeops root (run `make ensure-age-key` if not)
 
 ### 1. Update inventory & vars
-
-Edit the encrypted config with your VPS details:
 
 ```bash
 # From homeops root
@@ -129,6 +127,7 @@ make headscale-install
 ```
 
 What the playbook does:
+
 - Opens firewall ports (iptables, saved via `netfilter-persistent`)
 - Downloads headscale `.deb` for the correct architecture
 - Installs and writes config from `templates/config.yaml.j2`
@@ -147,7 +146,6 @@ make tailscale
 ### 4. Approve subnet route
 
 ```bash
-# SSH to VPS and approve node1's route advertisement
 ssh ubuntu@<vps-ip>
 sudo headscale nodes list                                                # note node1 identifier
 sudo headscale nodes approve-routes --identifier <id> --routes 192.168.0.0/24
@@ -155,7 +153,7 @@ sudo headscale nodes approve-routes --identifier <id> --routes 192.168.0.0/24
 
 ---
 
-## 📋 Variables (group_vars/all.yml)
+## Variables (group_vars/all.yml)
 
 | Variable | Description |
 | --- | --- |
@@ -170,7 +168,7 @@ sudo headscale nodes approve-routes --identifier <id> --routes 192.168.0.0/24
 
 ---
 
-## 📱 Register Devices
+## Register Devices
 
 ### k3s nodes (automated)
 
@@ -199,7 +197,7 @@ sudo headscale nodes rename --identifier <id> my-macbook
 
 ---
 
-## 🛠️ Day-to-day Operations
+## Day-to-day Operations
 
 ```bash
 # SSH to VPS
@@ -226,11 +224,10 @@ sudo systemctl status headscale
 
 ---
 
-## 💣 Teardown
+## Teardown
 
 ```bash
-# From homeops root
-make headscale-teardown
+make headscale-teardown    # from homeops root
 ```
 
 Stops and removes headscale package, config, and all data (`/var/lib/headscale`, `/etc/headscale`).
@@ -239,7 +236,7 @@ Re-run `make headscale-install` to restore.
 
 ---
 
-## 🔑 Headplane UI
+## Headplane UI
 
 Headplane runs in-cluster at `headplane.shublab.com/admin/` and manages this VPS remotely.
 API key is stored encrypted in `infrastructure/base/networking/headplane/secret.sops.yaml`.
@@ -248,14 +245,13 @@ API key is stored encrypted in `infrastructure/base/networking/headplane/secret.
 # Generate new API key (valid 1 year), then update the SOPS secret
 ssh ubuntu@<vps-ip> "sudo headscale apikeys create --expiration 8760h"
 
-# Update in-cluster secret
 sops infrastructure/base/networking/headplane/secret.sops.yaml
 # Flux picks up the change and re-applies automatically on next reconcile
 ```
 
 ---
 
-## ❓ Why not Cloudflare Tunnel?
+## Why not Cloudflare Tunnel?
 
 Headscale uses **TS2021** protocol — a WebSocket upgrade over HTTPS.
 Cloudflare proxy strips `Upgrade: websocket` headers even with WebSockets enabled,

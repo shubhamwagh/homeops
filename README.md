@@ -4,133 +4,73 @@ Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI+L2LB
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
-    %% ── External ──────────────────────────────────────────────────────────
-    subgraph ext["🌐 External Services"]
-        GH["🐙 GitHub\nhomeops repo\nshubhamwagh/homeops"]
-        CF["☁️ Cloudflare\n*.shublab.com → 192.168.0.2\nDNS-01 challenge API"]
-        LECA["🔒 Let's Encrypt\nACME CA"]
-        ORACLE["☁️ Oracle Free Tier VPS\nheadscale.shublab.com\n:443 TS2021  :41641 WG  :3478 STUN"]
+    subgraph internet["🌐 Internet"]
+        GH["🐙 GitHub\nhomeops repo"]
+        CF["☁️ Cloudflare\n*.shublab.com → 192.168.0.2\nDNS-01 challenge"]
+        VPS["🎯 Oracle VPS\nheadscale.shublab.com\nWireGuard coordination"]
     end
 
-    %% ── Developer machine ─────────────────────────────────────────────────
-    subgraph dev["💻 Developer Machine"]
-        MK["⚙️ Makefile\nmake bootstrap · gitops\nmake tailscale · headscale-install"]
-        AGEKEY["🗝️ age.agekey\nlocal only — never committed"]
-        SOPSENC["🔐 SOPS + age\nencrypt *.sops.yaml\nvps/headscale secrets"]
-        ANSIBLE["🤖 Ansible + k3sup\nbare-metal provisioning"]
+    DEV["💻 Developer Machine\nmake bootstrap · gitops · tailscale · headscale-install"]
+
+    subgraph cluster["🏠 k3s Cluster · 192.168.0.0/24"]
+        subgraph nodes["🖥️ Nodes"]
+            N1["node1 · .32\ncontrol-plane + subnet router"]
+            N2N3["node2 · .33   node3 · .34\nworkers"]
+        end
+
+        subgraph infra["⚙️ Infrastructure"]
+            FLUX["🔄 FluxCD\nGitOps · polls GitHub · applies HelmReleases\nSOPS+age secret decryption"]
+            CILIUM["🐝 Cilium\nCNI · L2 announcer · VIP 192.168.0.2"]
+            TRAEFIK["🔀 Traefik\ningress · *.shublab.com"]
+            CERT["🔒 cert-manager\nwildcard TLS · Cloudflare DNS-01"]
+            LONGHORN["💾 Longhorn\ndistributed storage · 3 replicas"]
+            MONITORING["📊 Prometheus · Alertmanager · Grafana"]
+        end
+
+        APPS["📦 Apps\nHomepage · Grafana · Longhorn · Vaultwarden\nSearXNG · Tandoor · Headplane"]
     end
 
-    %% ── k3s Cluster ───────────────────────────────────────────────────────
-    subgraph cluster["🏠 k3s Cluster  ·  192.168.0.0/24"]
+    VPNCLIENTS["📱 Remote Clients\nMac · iPhone  (WireGuard · 100.64.0.0/10)"]
 
-        subgraph nodes["🖥️ Bare Metal Nodes  (HP G2 Mini PCs)"]
-            N1["node1  192.168.0.32\ncontrol-plane\nsubnet router"]
-            N2["node2  192.168.0.33\nworker"]
-            N3["node3  192.168.0.34\nworker"]
-        end
+    %% provisioning
+    DEV -- "Ansible + k3sup\nSSH :22" --> nodes
+    DEV -- "headscale-install\nAnsible SSH" --> VPS
 
-        subgraph gitops["🔄 GitOps  ·  FluxCD"]
-            FLUX["🔄 FluxCD\nGitRepository + Kustomizations\ninfrastructure → config → apps"]
-            SOPSSEC["🔐 sops-age Secret\ndecrypts *.sops.yaml at deploy time"]
-            RENOVATE["🤖 Renovate\ndaily 2am — Helm chart PRs"]
-        end
-
-        subgraph networking["🌐 Networking Layer"]
-            CILIUM["🐝 Cilium CNI\nL2 announcer\nVIP: 192.168.0.2/28"]
-            TRAEFIK["🔀 Traefik  32.1.0\ningress controller\nLB IP: 192.168.0.2\ndashboard: traefik.shublab.com"]
-            CERTMGR["🔒 cert-manager  v1.17.2\nwildcard *.shublab.com\nCloudflare DNS-01"]
-            REFLECTOR["🪞 Reflector\nsyncs TLS secret\nacross namespaces"]
-            CROWDSEC["🛡️ CrowdSec  0.12\nIDS/IPS Traefik middleware"]
-            RELOADER["♻️ Reloader  1.2.1\nauto-restart on\nConfigMap/Secret change"]
-        end
-
-        subgraph storage["💾 Storage"]
-            LONGHORN["💾 Longhorn  1.7.2\ndistributed block storage\n3-replica across nodes\nlonghorn.shublab.com"]
-        end
-
-        subgraph observability["📊 Observability"]
-            PROM["📊 kube-prometheus-stack  79.*\nPrometheus + Alertmanager"]
-            GRAFANA["📈 Grafana\ngrafana.shublab.com"]
-            METRICS["📏 metrics-server  3.12.2\nHPA + kubectl top"]
-        end
-
-        subgraph apps["📦 Applications"]
-            HOMEPAGE["🏠 Homepage\nhome.shublab.com"]
-            VAULTWARDEN["🔐 Vaultwarden\nvault.shublab.com"]
-            SEARXNG["🔍 SearXNG\nsearch.shublab.com"]
-            TANDOOR["🍳 Tandoor\ntandoor.shublab.com"]
-            HEADPLANE["🎛️ Headplane\nheadplane.shublab.com/admin"]
-        end
-    end
-
-    %% ── Remote clients ────────────────────────────────────────────────────
-    subgraph remote["📱 Remote Clients  ·  WireGuard  ·  100.64.0.0/10"]
-        MAC["💻 Mac\ntailscale client"]
-        IPHONE["📱 iPhone\ntailscale client"]
-    end
-
-    %% ── Edges: provisioning ───────────────────────────────────────────────
-    MK --> AGEKEY
-    MK --> ANSIBLE
-    AGEKEY --> SOPSENC
-    ANSIBLE -- "SSH :22\nk3sup install" --> N1
-    ANSIBLE -- "SSH :22\nk3sup join" --> N2 & N3
-    SOPSENC -- "sops -e\ncommit to git" --> GH
-
-    %% ── Edges: GitOps flow ────────────────────────────────────────────────
+    %% GitOps
+    DEV -- "sops -e → git push" --> GH
     GH -- "poll every 1m" --> FLUX
-    FLUX --> SOPSSEC
-    SOPSSEC -- "decrypt secrets\nat apply time" --> FLUX
-    RENOVATE -- "opens PRs" --> GH
-    FLUX -- "HelmRelease\nKustomization" --> CILIUM & TRAEFIK & CERTMGR & LONGHORN & PROM & apps & CROWDSEC & RELOADER & REFLECTOR & RENOVATE
+    FLUX --> CILIUM & TRAEFIK & CERT & LONGHORN & MONITORING & APPS
 
-    %% ── Edges: TLS ────────────────────────────────────────────────────────
-    CERTMGR -- "DNS-01 challenge\nAPI token" --> CF
-    CF -- "challenge response" --> LECA
-    LECA -- "wildcard cert\n*.shublab.com" --> CERTMGR
-    CERTMGR --> REFLECTOR
-    REFLECTOR -- "sync secret\nto all namespaces" --> TRAEFIK
+    %% TLS + traffic
+    CERT -- "DNS-01 API" --> CF
+    CF -- "wildcard cert\n*.shublab.com" --> CERT
+    CF -- "A record\n→ 192.168.0.2" --> CILIUM
+    CILIUM --> TRAEFIK --> APPS
+    CERT --> TRAEFIK
 
-    %% ── Edges: traffic ────────────────────────────────────────────────────
-    CF -- "*.shublab.com\n→ 192.168.0.2" --> CILIUM
-    CILIUM -- "L2 announce\nVIP" --> TRAEFIK
-    TRAEFIK --> CROWDSEC
-    CROWDSEC --> HOMEPAGE & VAULTWARDEN & SEARXNG & TANDOOR & HEADPLANE & GRAFANA & LONGHORN
-    PROM --> GRAFANA
+    %% VPN
+    VPNCLIENTS -- "TS2021 key exchange\n:443" --> VPS
+    VPS -- "WireGuard mesh\n100.64.0.0/10" --> N1
+    N1 -- "subnet route\n192.168.0.0/24" --> N2N3
 
-    %% ── Edges: VPN ────────────────────────────────────────────────────────
-    MK -- "make headscale-install\nAnsible over SSH" --> ORACLE
-    MAC -- "TS2021 WebSocket\nkey exchange" --> ORACLE
-    IPHONE -- "TS2021 WebSocket\nkey exchange" --> ORACLE
-    ORACLE -- "WireGuard mesh\n100.64.0.0/10" --> N1
-    N1 -- "subnet route\n192.168.0.0/24" --> N2 & N3
-    MAC & IPHONE -- "WireGuard P2P\nudp :41641" --> N1
-
-    %% ── Styles ────────────────────────────────────────────────────────────
-    style ext fill:#1a1a1a,stroke:#555555,color:#aaaaaa
-    style dev fill:#2e1a2e,stroke:#aa44aa,color:#f0c0f0
+    style internet fill:#1a1a1a,stroke:#444,color:#aaa
     style cluster fill:#0d1f0d,stroke:#2a6a2a,color:#c0f0c0
     style nodes fill:#0a1a0a,stroke:#1a5a1a,color:#c0f0c0
-    style gitops fill:#1a1a2e,stroke:#4444aa,color:#c0c0ff
-    style networking fill:#0a1a2e,stroke:#1a4a8a,color:#c0d8ff
-    style storage fill:#1a0a0a,stroke:#8a2a2a,color:#ffc0c0
-    style observability fill:#1a1a0a,stroke:#8a8a00,color:#ffffc0
-    style apps fill:#2a1a3a,stroke:#7744aa,color:#f0d0ff
-    style remote fill:#3a2a1a,stroke:#cc8844,color:#ffe0c0
+    style infra fill:#0a1a2e,stroke:#1a4a8a,color:#c0d8ff
 ```
 
-### 🚦 Traffic flows
+### Traffic flows
 
-| Flow | Path | Notes |
-| --- | --- | --- |
-| **LAN** | `*.shublab.com` → Cloudflare DNS → Cilium VIP 192.168.0.2 → Traefik → service | Direct, no VPN needed on LAN |
-| **Remote** | Client → Headscale VPS (key exchange) → WireGuard P2P → node1 → subnet route → service | VPS handles only control plane |
-| **GitOps** | git push → Flux polls GitHub → decrypt SOPS secrets → apply HelmReleases | ~1 min reconcile |
-| **TLS** | cert-manager → Cloudflare DNS-01 → Let's Encrypt → wildcard cert → Reflector syncs | Auto-renew 30 days before expiry |
+| Flow | Path |
+| --- | --- |
+| LAN | `*.shublab.com` → Cloudflare DNS → Cilium VIP 192.168.0.2 → Traefik → service |
+| Remote | Client → Headscale VPS (key exchange) → WireGuard P2P → node1 → subnet route → service |
+| GitOps | git push → Flux polls GitHub → decrypt SOPS secrets → apply HelmReleases (~1 min) |
+| TLS | cert-manager → Cloudflare DNS-01 → Let's Encrypt → wildcard cert → auto-renew |
 
 ---
 
@@ -159,7 +99,7 @@ Three unproxied A records (orange cloud **OFF**):
 
 ---
 
-## 🚀 Full Setup (fresh nodes → running cluster)
+## Full Setup (fresh nodes → running cluster)
 
 ```bash
 # 1. Install tools (once)
@@ -185,7 +125,7 @@ After step 5, all nodes appear in Headplane at `headplane.shublab.com/admin/`.
 
 ---
 
-## 🔧 VPN — Headscale on Oracle VPS
+## VPN — Headscale on Oracle VPS
 
 ```bash
 # Deploy headscale to a fresh Ubuntu VPS
@@ -200,7 +140,7 @@ See [`vps/headscale/README.md`](vps/headscale/README.md) for full details.
 
 ---
 
-## 💣 Teardown + Rebuild
+## Teardown + Rebuild
 
 ```bash
 make teardown    # wipe k3s + tailscale from all nodes
@@ -213,7 +153,7 @@ make tailscale   # reinstall tailscale + auto-register all nodes
 
 ---
 
-## 🛠️ Day-to-day
+## Day-to-day
 
 ```bash
 make flux-status      # show all Flux resources
@@ -224,7 +164,7 @@ make tailscale        # re-provision tailscale on all nodes
 
 ---
 
-## 📦 Stack
+## Stack
 
 | Layer | Tool | Version |
 | --- | --- | --- |
@@ -246,23 +186,23 @@ make tailscale        # re-provision tailscale on all nodes
 
 ---
 
-## 🌐 Services
+## Services
 
 | Service | URL | Namespace |
 | --- | --- | --- |
-| 🏠 Homepage | `home.shublab.com` | `homepage` |
-| 📊 Grafana | `grafana.shublab.com` | `monitoring` |
-| 💾 Longhorn | `longhorn.shublab.com` | `longhorn-system` |
-| 🔀 Traefik | `traefik.shublab.com` | `traefik` |
-| 🔐 Vaultwarden | `vault.shublab.com` | `vaultwarden` |
-| 🔍 SearXNG | `search.shublab.com` | `searxng` |
-| 🍳 Tandoor | `tandoor.shublab.com` | `tandoor` |
-| 🎛️ Headplane | `headplane.shublab.com/admin/` | `headplane` |
-| 🎯 Headscale | `headscale.shublab.com` | Oracle VPS |
+| Homepage | `home.shublab.com` | `homepage` |
+| Grafana | `grafana.shublab.com` | `monitoring` |
+| Longhorn | `longhorn.shublab.com` | `longhorn-system` |
+| Traefik | `traefik.shublab.com` | `traefik` |
+| Vaultwarden | `vault.shublab.com` | `vaultwarden` |
+| SearXNG | `search.shublab.com` | `searxng` |
+| Tandoor | `tandoor.shublab.com` | `tandoor` |
+| Headplane | `headplane.shublab.com/admin/` | `headplane` |
+| Headscale | `headscale.shublab.com` | Oracle VPS |
 
 ---
 
-## 🖥️ Nodes
+## Nodes
 
 | Hostname | Role | LAN IP | Tailscale IP |
 | --- | --- | --- | --- |
@@ -274,7 +214,7 @@ node1 advertises subnet route `192.168.0.0/24` — remote devices reach all serv
 
 ---
 
-## 🤖 Renovate
+## Renovate
 
 Renovate bot runs daily at 2am and opens PRs for outdated Helm chart versions.
 Check the Dependency Dashboard issue on GitHub to trigger manual runs or approve updates.
