@@ -313,22 +313,25 @@ grafana-setup:
 	@GRAFANA_PASS=$$(grep '^grafana:' .secrets-plaintext | awk '{print $$2}'); \
 	 GRAFANA_URL=https://grafana.shublab.com; \
 	 echo "Starring key dashboards..."; \
-	 for uid in \
-	   efa86fd1d0c121a26444b636a3f509a8 \
-	   7d57716318ee0dddbac5a7f451fb7753 \
-	   fac67cfbe174d3ef53eb473d73d9212f \
-	   3e97d1d02672cdd0861f4c97c64f89b2 \
-	   200ac8fdbfbb74b39aff88118e4d1c2c \
-	   919b92a8e8041bd567af9edab12c840c \
-	   ff635a025bcfea7bc3dd4f508990a3e9 \
-	   a87fb0d919ec0ea5f6543124e16c42a5 \
-	   9fa0d141-d019-4ad7-8bc5-42196ee308bd \
-	   6be0s85Mk; do \
+	 DASHBOARDS=$$(curl -s -u "admin:$$GRAFANA_PASS" "$$GRAFANA_URL/api/search?type=dash-db&limit=200"); \
+	 echo "$$DASHBOARDS" | jq -r '.[] | select(.title | IN( \
+	   "Kubernetes / Compute Resources / Cluster", \
+	   "Kubernetes / Compute Resources / Namespace (Workloads)", \
+	   "Kubernetes / Compute Resources / Node (Pods)", \
+	   "Kubernetes / Networking / Cluster", \
+	   "Kubernetes / Persistent Volumes", \
+	   "Node Exporter / Nodes", \
+	   "Node Exporter / USE Method / Cluster", \
+	   "Node Exporter / USE Method / Node", \
+	   "Prometheus / Overview", \
+	   "Grafana Overview" \
+	 )) | .uid' | while read uid; do \
 	   curl -sf -X POST -u "admin:$$GRAFANA_PASS" \
-	     "$$GRAFANA_URL/api/user/stars/dashboard/uid/$$uid" > /dev/null && echo "  starred $$uid" || echo "  skip $$uid"; \
+	     "$$GRAFANA_URL/api/user/stars/dashboard/uid/$$uid" > /dev/null && echo "  starred $$uid"; \
 	 done; \
 	 echo "Setting home dashboard to Node Exporter / Nodes..."; \
+	 HOME_UID=$$(echo "$$DASHBOARDS" | jq -r '.[] | select(.title == "Node Exporter / Nodes") | .uid'); \
 	 curl -sf -X PUT -u "admin:$$GRAFANA_PASS" \
 	   "$$GRAFANA_URL/api/user/preferences" \
 	   -H "Content-Type: application/json" \
-	   -d '{"homeDashboardUID":"7d57716318ee0dddbac5a7f451fb7753"}' > /dev/null && echo "  home dashboard set"
+	   -d "{\"homeDashboardUID\":\"$$HOME_UID\"}" > /dev/null && echo "  home dashboard set"
