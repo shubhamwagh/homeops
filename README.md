@@ -124,6 +124,9 @@ GITHUB_TOKEN=xxx CLOUDFLARE_TOKEN=xxx make gitops
 # 6. Wait for Flux to reconcile (~5 min), then verify
 make flux-status
 
+# 6a. Star key Grafana dashboards + set home dashboard
+make grafana-setup
+
 # 7. Register all nodes with headscale
 make tailscale
 
@@ -185,6 +188,7 @@ make flux-sync        # force reconcile from git
 make nodes            # kubectl get nodes -o wide
 make tailscale        # re-provision tailscale on all nodes
 make check            # full health check — nodes, flux, services, headscale
+make grafana-setup    # star key dashboards + set home dashboard
 ```
 
 ---
