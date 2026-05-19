@@ -302,6 +302,10 @@ check:
 
 # ─── day-to-day ops ────────────────────────────────────────────────────────
 
+blog-deploy:
+	kubectl rollout restart deployment/blog -n blog
+	kubectl rollout status deployment/blog -n blog
+
 flux-status:
 	flux get all -A
 
