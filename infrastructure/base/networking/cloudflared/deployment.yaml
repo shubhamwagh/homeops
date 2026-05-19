@@ -15,6 +15,10 @@ spec:
       labels:
         app: cloudflared
     spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:latest
