@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: blog
+  template:
+    metadata:
+      labels:
+        app: blog
+    spec:
+      initContainers:
+        - name: hugo-build
+          image: hugomods/hugo:exts
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              git clone --depth 1 https://github.com/shubhamwagh/blog.git /src
+              cd /src
+              hugo --destination /output --minify
+          volumeMounts:
+            - name: html
+              mountPath: /output
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: html
+          emptyDir: {}
