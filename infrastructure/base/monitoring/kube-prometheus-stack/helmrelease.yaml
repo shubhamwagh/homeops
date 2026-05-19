@@ -30,18 +30,55 @@ spec:
       targetPath: grafana.adminPassword
   values:
     alertmanager:
-      enabled: false
-
-    prometheus:
-      prometheusSpec:
-        retention: 7d
+      alertmanagerSpec:
+        replicas: 1
+        storage:
+          volumeClaimTemplate:
+            metadata:
+              labels:
+                recurring-job.longhorn.io/source: "enabled"
+                recurring-job.longhorn.io/snapshot-daily: "enabled"
+              annotations:
+                longhorn.io/replicas: "1"
+            spec:
+              storageClassName: longhorn
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 10Gi
         resources:
           requests:
             cpu: 100m
-            memory: 256Mi
+            memory: 128Mi
           limits:
-            cpu: 1000m
-            memory: 1Gi
+            cpu: 500m
+            memory: 256Mi
+
+    prometheus:
+      prometheusSpec:
+        replicas: 1
+        retention: 14d
+        storageSpec:
+          volumeClaimTemplate:
+            metadata:
+              labels:
+                recurring-job.longhorn.io/source: "enabled"
+                recurring-job.longhorn.io/snapshot-daily: "enabled"
+              annotations:
+                longhorn.io/replicas: "1"
+            spec:
+              storageClassName: longhorn
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1536Mi
+          limits:
+            cpu: 2000m
+            memory: 3Gi
 
     grafana:
       enabled: true
@@ -61,3 +98,15 @@ spec:
 
     kubeStateMetrics:
       enabled: true
+
+    defaultRules:
+      create: true
+
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
