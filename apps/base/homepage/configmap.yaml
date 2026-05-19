@@ -85,6 +85,10 @@ data:
             href: https://tandoor.shublab.com
             icon: tandoor-recipes.png
             description: Recipe Manager
+        - Blog:
+            href: https://blog.shublab.com
+            icon: si-markdown
+            description: Shubham's Notes
 
   widgets.yaml: |
     - kubernetes:
