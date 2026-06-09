@@ -339,4 +339,12 @@ grafana-setup:
 	 curl -sf -X PUT -u "admin:$$GRAFANA_PASS" \
 	   "$$GRAFANA_URL/api/user/preferences" \
 	   -H "Content-Type: application/json" \
-	   -d "{\"homeDashboardUID\":\"$$HOME_UID\"}" > /dev/null && echo "  home dashboard set"
+	   -d "{\"homeDashboardUID\":\"$$HOME_UID\"}" > /dev/null && echo "  home dashboard set"; \
+	 echo "Importing CrowdSec dashboard..."; \
+	 DS_UID=$$(curl -s -u "admin:$$GRAFANA_PASS" "$$GRAFANA_URL/api/datasources/name/Prometheus" | jq -r '.uid'); \
+	 CROWDSEC_JSON=$$(curl -sf https://grafana.com/api/dashboards/14514/revisions/1/download); \
+	 curl -sf -X POST -u "admin:$$GRAFANA_PASS" \
+	   "$$GRAFANA_URL/api/dashboards/import" \
+	   -H "Content-Type: application/json" \
+	   -d "{\"dashboard\":$$CROWDSEC_JSON,\"overwrite\":true,\"inputs\":[{\"name\":\"DS_PROMETHEUS\",\"type\":\"datasource\",\"pluginId\":\"prometheus\",\"value\":\"$$DS_UID\"}],\"folderId\":0}" \
+	   > /dev/null && echo "  CrowdSec dashboard imported"
