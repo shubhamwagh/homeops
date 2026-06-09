@@ -54,6 +54,14 @@ data:
             href: https://traefik.shublab.com
             icon: traefik.png
             description: Ingress Controller
+        - Headplane:
+            href: https://headplane.shublab.com/admin/
+            icon: mdi-vpn
+            description: VPN Management UI
+        - Headscale:
+            href: https://headscale.shublab.com
+            icon: si-tailscale
+            description: VPN Coordination Server
 
     - Infrastructure:
         - Longhorn:
