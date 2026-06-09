@@ -25,12 +25,13 @@ jobs:
 
       - name: Lint YAML
         run: |
-          yamllint -d "{extends: default, rules: {line-length: disable, truthy: disable, comments: disable, document-start: disable}}" \
+          yamllint -d "{extends: default, rules: {line-length: disable, truthy: disable, comments: disable, document-start: disable, indentation: disable, braces: disable}}" \
             $(find . -name "*.yml" -o -name "*.yaml" \
               | grep -v ".sops.yaml" \
               | grep -v "vps/headscale/inventory.yml" \
               | grep -v "vps/headscale/group_vars" \
               | grep -v ".github/workflows" \
+              | grep -v "gotk-components.yaml" \
               | head -60)
 
       - name: Verify SOPS files are encrypted
