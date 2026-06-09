@@ -58,7 +58,8 @@
         --login-server={{ headscale_url }}
         --authkey={{ preauth_key }}
         --advertise-routes={{ subnet_route }}
-        --accept-routes
+        --accept-routes=false
+        --accept-dns=false
         --reset
       when: inventory_hostname == groups['control_plane'][0]
       changed_when: true
@@ -68,7 +69,8 @@
         tailscale up
         --login-server={{ headscale_url }}
         --authkey={{ preauth_key }}
-        --accept-routes
+        --accept-routes=false
+        --accept-dns=false
         --reset
       when: inventory_hostname != groups['control_plane'][0]
       changed_when: true
