@@ -90,9 +90,3 @@ spec:
                   options:
                     - name: ndots
                       value: "1"
-          - target:
-              kind: ServiceMonitor
-            patch: |
-              - op: add
-                path: /metadata/labels/release
-                value: kube-prometheus-stack

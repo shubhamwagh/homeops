@@ -5,6 +5,7 @@ metadata:
   namespace: monitoring
   labels:
     app: crowdsec
+    release: kube-prometheus-stack
 spec:
   namespaceSelector:
     matchNames:
@@ -25,6 +26,7 @@ metadata:
   namespace: monitoring
   labels:
     app: crowdsec
+    release: kube-prometheus-stack
 spec:
   namespaceSelector:
     matchNames:
