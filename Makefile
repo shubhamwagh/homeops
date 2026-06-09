@@ -342,7 +342,7 @@ grafana-setup:
 	   -d "{\"homeDashboardUID\":\"$$HOME_UID\"}" > /dev/null && echo "  home dashboard set"; \
 	 echo "Importing CrowdSec dashboard..."; \
 	 DS_UID=$$(curl -s -u "admin:$$GRAFANA_PASS" "$$GRAFANA_URL/api/datasources/name/Prometheus" | jq -r '.uid'); \
-	 CROWDSEC_JSON=$$(curl -sf https://grafana.com/api/dashboards/14514/revisions/1/download); \
+	 CROWDSEC_JSON=$$(curl -sf https://grafana.com/api/dashboards/21419/revisions/1/download); \
 	 curl -sf -X POST -u "admin:$$GRAFANA_PASS" \
 	   "$$GRAFANA_URL/api/dashboards/import" \
 	   -H "Content-Type: application/json" \
