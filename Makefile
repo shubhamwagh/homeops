@@ -20,7 +20,8 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
 
 tools:
 	brew bundle
-	mise install
+	MISE_YES=1 mise install
+	@grep -q 'mise activate' ~/.bashrc || echo 'eval "$$(mise activate bash)"' >> ~/.bashrc
 
 # ─── cluster provisioning ──────────────────────────────────────────────────
 
