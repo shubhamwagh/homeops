@@ -81,7 +81,18 @@ flowchart TB
 ## Prerequisites
 
 - Ubuntu nodes reachable via SSH (see `infrastructure/metal/README.md`)
-- Homebrew installed on control machine
+- Homebrew installed on control machine (macOS or Linux):
+
+  ```bash
+  # Linux only — install prerequisites first:
+  sudo apt-get update && sudo apt-get install -y build-essential curl git procps pipx
+
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Linux only — add brew to PATH:
+  echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc && source ~/.bashrc
+  ```
+
 - Domain registered on **Cloudflare** (`shublab.com`)
 - Oracle Free Tier VPS running headscale (see `vps/headscale/README.md`)
 - Two env vars set:
@@ -160,7 +171,7 @@ make headscale-teardown         # remove headscale from VPS
 
 Register remote devices:
 
-- **Mac/Linux:** `tailscale up --login-server=https://headscale.shublab.com --accept-routes`
+- **Mac/Linux:** `tailscale up --login-server=https://headscale.shublab.com --accept-routes --accept-dns=false`
 - **iPhone:** Tailscale app → profile → Log in → Use a different server
 
 See [`vps/headscale/README.md`](vps/headscale/README.md) for full details.
