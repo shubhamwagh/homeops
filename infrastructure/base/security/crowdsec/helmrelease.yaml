@@ -80,3 +80,13 @@ spec:
                   options:
                     - name: ndots
                       value: "1"
+          - target:
+              kind: Deployment
+              name: crowdsec-lapi
+            patch: |
+              - op: add
+                path: /spec/template/spec/dnsConfig
+                value:
+                  options:
+                    - name: ndots
+                      value: "1"
