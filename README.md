@@ -85,12 +85,13 @@ flowchart TB
 
   ```bash
   # Linux only — install prerequisites first:
-  sudo apt-get update && sudo apt-get install -y build-essential curl git procps pipx
+  sudo apt-get update && sudo apt-get install -y build-essential curl git procps
 
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-  # Linux only — add brew to PATH:
+  # Linux only — add brew to PATH, then install pipx via brew (uses Python 3.14):
   echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc && source ~/.bashrc
+  brew install pipx
   ```
 
 - Domain registered on **Cloudflare** (`shublab.com`)
