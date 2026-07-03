@@ -6,6 +6,4 @@ brew "yq"      # YAML processor
 brew "age"     # encryption for SOPS
 brew "sops"    # secret encryption
 brew "stern"   # multi-pod log tailing
-
-tap "fluxcd/tap"
-brew "fluxcd/tap/flux"
+brew "pipx"    # needed by mise's pipx:ansible backend
