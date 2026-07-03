@@ -71,7 +71,8 @@ homeops/
 └── apps/
     ├── base/
     │   ├── homepage/               # dashboard - shows all services
-    │   └── tandoor/                # recipe manager (needs postgres - TODO)
+    │   ├── tandoor/                # recipe manager (needs postgres - TODO)
+    │   └── trek/                   # travel planner (sqlite, own PVC)
     └── staging/
 ```
 
@@ -86,6 +87,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `renovate-github-token` | `renovate` | RENOVATE_TOKEN (GitHub PAT) |
 | `cloudflare-api-token` | `cert-manager` | Cloudflare API token for DNS-01 |
 | `searxng-secret` | `searxng` | secret-key |
+| `trek-secret` | `trek` | ENCRYPTION_KEY, ADMIN_EMAIL, ADMIN_PASSWORD |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 
@@ -100,6 +102,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | Vaultwarden | `vault.shublab.com` | `vaultwarden` |
 | SearXNG | `search.shublab.com` | `searxng` |
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
+| TREK | `trek.shublab.com` | `trek` |
 
 ## Key Versions
 

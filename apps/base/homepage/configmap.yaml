@@ -93,6 +93,10 @@ data:
             href: https://tandoor.shublab.com
             icon: tandoor-recipes.png
             description: Recipe Manager
+        - TREK:
+            href: https://trek.shublab.com
+            icon: mdi-map-marker-path
+            description: Travel Planner
         - Blog:
             href: https://blog.shublab.com
             icon: si-markdown
