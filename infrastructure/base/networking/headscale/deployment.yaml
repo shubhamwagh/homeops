@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: headscale
-          image: headscale/headscale:v0.29.2
+          image: headscale/headscale:v0.29.3
           command: ["headscale", "serve"]
           ports:
             - containerPort: 8080
