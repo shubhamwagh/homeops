@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: better-booking-bot
+  namespace: better-booking-bot
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd,better-booking-bot-better-booking-bot-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - booking-bot.shublab.com
+      secretName: shublab-wildcard-tls
+  rules:
+    - host: booking-bot.shublab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: better-booking-bot
+                port:
+                  number: 80

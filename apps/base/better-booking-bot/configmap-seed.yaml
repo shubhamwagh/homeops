@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: better-booking-bot-config-seed
+  namespace: better-booking-bot
+data:
+  config.yaml: |
+    # better-booking-bot configuration
+    # Each target defines one booking slot to auto-grab.
+    # The bot runs shortly before release_time and polls until the slot opens.
+    #
+    # This file only seeds the PVC on first boot - after that, edit targets
+    # via the web UI (they're written straight to the PVC, not back to git).
+
+    targets:
+      - name: "Abingdon Pickleball Monday 19:30"
+        venue_slug: "white-horse-leisure-and-tennis-centre"
+        activity_slug: "pickleball-drop-in"
+        target_time: "19:30"
+        days_ahead: 7
+        release_hour: 21
+        cron: "57 20 * * 1"
+        enabled: true
