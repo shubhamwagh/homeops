@@ -36,6 +36,8 @@ spec:
           envFrom:
             - secretRef:
                 name: better-booking-bot-creds
+            - secretRef:
+                name: better-booking-bot-card
           env:
             - name: CONFIG_PATH
               value: /data/config.yaml
