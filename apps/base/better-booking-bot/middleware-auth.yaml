@@ -1,8 +1,0 @@
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: better-booking-bot-auth
-  namespace: better-booking-bot
-spec:
-  basicAuth:
-    secret: better-booking-bot-webui-auth
