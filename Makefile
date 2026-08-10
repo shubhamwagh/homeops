@@ -173,7 +173,7 @@ secrets: ensure-age-key
 	   "$$(printf '%s' "$$LONGHORN_HTPASSWD" | base64)" > infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: traefik-dashboard-auth\n  namespace: traefik\nstringData:\n  users: "%s"\n' \
 	   "$$TRAEFIK_HTPASSWD" > infrastructure/base/networking/traefik/secret-dashboard-auth.sops.yaml; \
-	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: trek-secret\n  namespace: trek\nstringData:\n  ENCRYPTION_KEY: "%s"\n  ADMIN_EMAIL: "shubamwagh48@gmail.com"\n  ADMIN_PASSWORD: "%s"\n' \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: trek-secret\n  namespace: trek\nstringData:\n  ENCRYPTION_KEY: "%s"\n  ADMIN_EMAIL: "shubhamwagh48@gmail.com"\n  ADMIN_PASSWORD: "%s"\n' \
 	   "$$TREK_ENCRYPTION_KEY" "$$TREK_ADMIN_PASS" > apps/base/trek/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
 	 sops --encrypt --in-place apps/base/tandoor/secret.sops.yaml; \
