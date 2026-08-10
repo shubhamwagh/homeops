@@ -101,6 +101,10 @@ data:
             href: https://blog.shublab.com
             icon: si-markdown
             description: Shubham's Notes
+        - Better Booking Bot:
+            href: https://booking-bot.shublab.com
+            icon: mdi-badminton
+            description: Automated Sports Slot Booking
 
   widgets.yaml: |
     - kubernetes:
