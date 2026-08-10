@@ -238,6 +238,8 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Vaultwarden | `vault.shublab.com` | `vaultwarden` |
 | SearXNG | `search.shublab.com` | `searxng` |
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
+| TREK | `trek.shublab.com` | `trek` |
+| Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 
