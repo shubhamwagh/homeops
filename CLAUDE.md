@@ -72,7 +72,8 @@ homeops/
     ├── base/
     │   ├── homepage/               # dashboard - shows all services
     │   ├── tandoor/                # recipe manager (needs postgres - TODO)
-    │   └── trek/                   # travel planner (sqlite, own PVC)
+    │   ├── trek/                   # travel planner (sqlite, own PVC)
+    │   └── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
     └── staging/
 ```
 
@@ -88,6 +89,8 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `cloudflare-api-token` | `cert-manager` | Cloudflare API token for DNS-01 |
 | `searxng-secret` | `searxng` | secret-key |
 | `trek-secret` | `trek` | ENCRYPTION_KEY, ADMIN_EMAIL, ADMIN_PASSWORD |
+| `better-booking-bot-creds` | `better-booking-bot` | BETTER_USERNAME, BETTER_PASSWORD, CARD_CVV |
+| `better-booking-bot-webui-auth` | `better-booking-bot` | htpasswd (Traefik basic auth) |
 | `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
 | `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
 
@@ -105,6 +108,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | SearXNG | `search.shublab.com` | `searxng` |
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
 | TREK | `trek.shublab.com` | `trek` |
+| Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 
 ## Key Versions
