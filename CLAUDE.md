@@ -88,6 +88,8 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `cloudflare-api-token` | `cert-manager` | Cloudflare API token for DNS-01 |
 | `searxng-secret` | `searxng` | secret-key |
 | `trek-secret` | `trek` | ENCRYPTION_KEY, ADMIN_EMAIL, ADMIN_PASSWORD |
+| `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
+| `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 
@@ -103,6 +105,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | SearXNG | `search.shublab.com` | `searxng` |
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
 | TREK | `trek.shublab.com` | `trek` |
+| Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 
 ## Key Versions
 

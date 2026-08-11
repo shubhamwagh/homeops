@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-health-check
+  namespace: car-health-check
+spec:
+  selector:
+    app: car-health-check-cache
+  ports:
+    - port: 80
+      targetPort: 8080

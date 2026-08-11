@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: car-health-check
+  namespace: car-health-check
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd,car-health-check-car-health-check-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - carhealth.shublab.com
+      secretName: shublab-wildcard-tls
+  rules:
+    - host: carhealth.shublab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: car-health-check
+                port:
+                  number: 80

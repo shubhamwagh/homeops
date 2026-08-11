@@ -240,6 +240,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
 | TREK | `trek.shublab.com` | `trek` |
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
+| Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 

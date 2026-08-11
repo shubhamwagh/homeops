@@ -1,0 +1,8 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: car-health-check-auth
+  namespace: car-health-check
+spec:
+  basicAuth:
+    secret: car-health-check-webui-auth
