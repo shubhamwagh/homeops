@@ -105,6 +105,10 @@ data:
             href: https://booking-bot.shublab.com
             icon: mdi-badminton
             description: Automated Sports Slot Booking
+        - Car Health Check:
+            href: https://carhealth.shublab.com
+            icon: mdi-car-cog
+            description: UK Vehicle Tax/MOT/Buying-Signal Report
 
   widgets.yaml: |
     - kubernetes:
