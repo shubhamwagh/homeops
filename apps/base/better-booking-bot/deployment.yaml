@@ -52,6 +52,9 @@ spec:
         - name: webui
           image: ghcr.io/shubhamwagh/better-booking-bot:latest
           command: ["python", "-m", "better_bot.webui"]
+          envFrom:
+            - secretRef:
+                name: better-booking-bot-creds
           env:
             - name: CONFIG_PATH
               value: /data/config.yaml
