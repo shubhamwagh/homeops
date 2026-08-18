@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy
+  namespace: ntfy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ntfy
+  template:
+    metadata:
+      labels:
+        app: ntfy
+    spec:
+      containers:
+        - name: ntfy
+          image: binwiederhier/ntfy:latest
+          command: ["ntfy", "serve"]
+          env:
+            - name: NTFY_BASE_URL
+              value: "https://ntfy.shublab.com"
+            # Self-hosted-only push is silently unreliable on iOS: Apple kills
+            # background sockets, so the app never sees a new message until
+            # it's reopened. Routing the wake-up ping through ntfy.sh's APNs
+            # relay fixes that while message content still never leaves this
+            # cluster - ntfy.sh only ever sees "something arrived", not what.
+            - name: NTFY_UPSTREAM_BASE_URL
+              value: "https://ntfy.sh"
+            - name: NTFY_LISTEN_HTTP
+              value: ":80"
+            - name: NTFY_CACHE_FILE
+              value: "/var/lib/ntfy/cache.db"
+            - name: NTFY_AUTH_FILE
+              value: "/var/lib/ntfy/auth.db"
+            - name: NTFY_AUTH_DEFAULT_ACCESS
+              value: "deny-all"
+            - name: NTFY_ENABLE_SIGNUP
+              value: "false"
+            - name: NTFY_BEHIND_PROXY
+              value: "true"
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ntfy
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ntfy-data
