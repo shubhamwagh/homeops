@@ -26,5 +26,11 @@ data:
         proxy_ignore_headers Cache-Control Expires Set-Cookie;
         proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
         add_header X-Cache-Status $upstream_cache_status always;
+
+        # /report is always HTTP 200 even when Zyfy/MOT failed - the app sets
+        # X-No-Cache on those responses since status code alone can't tell a
+        # real report from a quota-exhausted/timeout error page.
+        proxy_no_cache $upstream_http_x_no_cache;
+        proxy_cache_bypass $upstream_http_x_no_cache;
       }
     }
