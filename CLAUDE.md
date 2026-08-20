@@ -73,8 +73,7 @@ homeops/
     │   ├── homepage/               # dashboard - shows all services
     │   ├── tandoor/                # recipe manager (needs postgres - TODO)
     │   ├── trek/                   # travel planner (sqlite, own PVC)
-    │   ├── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
-    │   └── hermes-agent/           # self-hosted Hermes Agent + hermes-webui + dashboard (own PVC)
+    │   └── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
     └── staging/
 ```
 
@@ -94,7 +93,6 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `better-booking-bot-webui-auth` | `better-booking-bot` | htpasswd (Traefik basic auth) |
 | `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
 | `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
-| `hermes-agent-secret` | `hermes-agent` | DASHBOARD_CREDENTIAL (ANTHROPIC_API_KEY / OPENAI_API_KEY not set yet) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 
@@ -112,7 +110,6 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | TREK | `trek.shublab.com` | `trek` |
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
-| Hermes Agent | `hermes.shublab.com` | `hermes-agent` |
 
 ## Key Versions
 
