@@ -1,0 +1,129 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hermes-homelab-observer
+rules:
+  # Core API - cluster/workload visibility
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - pods
+      - pods/log
+      - services
+      - endpoints
+      - events
+      - configmaps
+      - persistentvolumeclaims
+      - persistentvolumes
+    verbs: [get, list, watch]
+
+  # apps - workload controllers
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: [get, list, watch]
+
+  # batch - jobs
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: [get, list, watch]
+
+  # networking - ingress/network policy visibility
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - ingressclasses
+      - networkpolicies
+    verbs: [get, list, watch]
+
+  # storage - storage class / CSI / attachment visibility
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+      - csidrivers
+      - csinodes
+      - volumeattachments
+    verbs: [get, list, watch]
+
+  # metrics-server - resource utilisation
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - nodes
+      - pods
+    verbs: [get, list]
+
+  # Flux - GitOps health (only the CRDs this repo actually uses:
+  # GitRepository sources, resolved HelmRepository/HelmChart, HelmRelease,
+  # Kustomization - no Bucket/OCIRepository/ExternalArtifact/notification
+  # CRDs are used anywhere in this repo, so they're intentionally excluded)
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources:
+      - helmreleases
+    verbs: [get, list, watch]
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources:
+      - kustomizations
+    verbs: [get, list, watch]
+  - apiGroups: ["source.toolkit.fluxcd.io"]
+    resources:
+      - gitrepositories
+      - helmrepositories
+      - helmcharts
+    verbs: [get, list, watch]
+
+  # Longhorn - storage health (volumes/replicas/engines/node storage
+  # conditions/backups/recurring jobs/snapshots only - not the internal
+  # bookkeeping CRDs like instancemanagers/backingimages/orphans/etc)
+  - apiGroups: ["longhorn.io"]
+    resources:
+      - volumes
+      - replicas
+      - engines
+      - nodes
+      - backups
+      - backuptargets
+      - recurringjobs
+      - snapshots
+    verbs: [get, list, watch]
+
+  # Cilium - only the CRDs actually in use in this repo (CiliumL2AnnouncementPolicy,
+  # CiliumLoadBalancerIPPool) plus the always-present runtime health objects
+  # (CiliumNode/CiliumEndpoint) - no CiliumNetworkPolicy since none are defined
+  - apiGroups: ["cilium.io"]
+    resources:
+      - ciliumnodes
+      - ciliumendpoints
+      - ciliumloadbalancerippools
+      - ciliuml2announcementpolicies
+    verbs: [get, list, watch]
+
+  # Traefik - only the CRDs this repo actually uses (IngressRoute, Middleware)
+  - apiGroups: ["traefik.io"]
+    resources:
+      - ingressroutes
+      - middlewares
+    verbs: [get, list, watch]
+
+  # cert-manager - certificate issuance health (ClusterIssuer is the only
+  # issuer kind used in this repo; Challenge/Order expose *why* a cert is stuck)
+  - apiGroups: ["cert-manager.io"]
+    resources:
+      - certificates
+      - clusterissuers
+    verbs: [get, list, watch]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources:
+      - challenges
+      - orders
+    verbs: [get, list, watch]
+
+# Explicitly NOT granted anywhere in this role: secrets (any apiGroup),
+# any create/update/patch/delete/deletecollection verb, pods/exec,
+# pods/attach, pods/portforward, serviceaccounts/token, RBAC resources,
+# certificatesigningrequests/approval, or any cluster-admin aggregation.

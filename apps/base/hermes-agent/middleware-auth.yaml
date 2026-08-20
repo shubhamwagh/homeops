@@ -1,0 +1,8 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: hermes-agent-auth
+  namespace: hermes-agent
+spec:
+  basicAuth:
+    secret: hermes-agent-webui-auth
