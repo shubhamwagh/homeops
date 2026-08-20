@@ -6,10 +6,12 @@ resources:
   - ../../base/networking/traefik-middleware-security.yaml
   - ../../base/networking/traefik/middleware-auth.yaml
   - ../../base/networking/traefik/secret-dashboard-auth.sops.yaml
+  - ../../base/networking/traefik/secret-dashboard-auth-plaintext.sops.yaml
   - ../../base/networking/traefik/ingress-dashboard.yaml
   - ../../base/storage/longhorn/recurring-jobs
   - ../../base/storage/longhorn/servicemonitor.yaml
   - ../../base/storage/longhorn/secret-basic-auth.sops.yaml
+  - ../../base/storage/longhorn/secret-basic-auth-plaintext.sops.yaml
   - ../../base/storage/longhorn/middleware-auth.yaml
   - ../../base/storage/longhorn/ingress.yaml
   - ../../base/security/crowdsec/servicemonitor.yaml

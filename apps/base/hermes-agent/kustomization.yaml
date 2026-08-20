@@ -12,6 +12,7 @@ resources:
   - service.yaml
   - middleware-auth.yaml
   - secret-webui-auth.sops.yaml
+  - secret-webui-auth-plaintext.sops.yaml
   - ingress.yaml
 # Observability-first, least-privilege deployment (phase 1). ClusterRole
 # grants get/list/watch only, no Secrets access anywhere, no exec/attach/

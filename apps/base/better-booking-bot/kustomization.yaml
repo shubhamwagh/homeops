@@ -9,4 +9,5 @@ resources:
   - service.yaml
   - middleware-auth.yaml
   - secret-webui-auth.sops.yaml
+  - secret-webui-auth-plaintext.sops.yaml
   - ingress.yaml
