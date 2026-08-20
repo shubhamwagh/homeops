@@ -95,6 +95,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
 | `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
 | `hermes-agent-secret` | `hermes-agent` | DASHBOARD_CREDENTIAL (ANTHROPIC_API_KEY / OPENAI_API_KEY not set yet) |
+| `hermes-agent-ssh` | `hermes-agent` | id_ed25519, config (SSH key + Host aliases `node3`/`laptop` for agent onward-exec) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 

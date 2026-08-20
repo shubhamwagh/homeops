@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - pvc.yaml
   - secret.sops.yaml
+  - secret-ssh.sops.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
