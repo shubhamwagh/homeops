@@ -16,5 +16,6 @@ age.agekey
 *.tmp
 *.log
 .secrets-plaintext
+.secrets-plaintext-machine
 .ntfy-credentials
 # vps/headscale/vars.yml and inventory.yml committed encrypted via SOPS

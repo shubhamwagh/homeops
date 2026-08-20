@@ -14,7 +14,7 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
         tailscale teardown-tailscale \
         headscale-install headscale-teardown headscale-approve-routes \
-        check secret secrets-plaintext
+        check secret secrets-plaintext secrets-plaintext-machine
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -212,6 +212,20 @@ secrets-plaintext:
 	  python3 scripts/print-secrets.py; \
 	} > .secrets-plaintext
 	@echo "Regenerated .secrets-plaintext"
+
+# Raw backwards-compatible dump of every MACHINE-ONLY secret's fields, kept in
+# its OWN file (never merged into .secrets-plaintext) - reference/backup only,
+# not meant to be typed into a login prompt. Also generated, also gitignored.
+secrets-plaintext-machine:
+	@{ \
+	  echo "# MACHINE-ONLY secrets, regenerated $$(date -u +%Y-%m-%dT%H:%M:%SZ) from secrets-manifest.yaml."; \
+	  echo "# Reference/backup only - these are consumed by pods/services, not typed by a human."; \
+	  echo "# Source of truth is always the encrypted *.sops.yaml files - see CLAUDE.md 'Secret Handling'."; \
+	  echo "# Back this file up securely and delete it when done."; \
+	  echo ""; \
+	  python3 scripts/print-secrets.py --machine-only; \
+	} > .secrets-plaintext-machine
+	@echo "Regenerated .secrets-plaintext-machine"
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
 flux-commit-secrets:

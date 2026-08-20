@@ -19,7 +19,8 @@ make nodes              # kubectl get nodes -o wide
 make flux-status        # flux get all -A
 make flux-sync          # force reconcile from git
 make secret APP=<app>   # decrypt one app's human-access credentials (see "Secret Handling")
-make secrets-plaintext  # regenerate .secrets-plaintext from secrets-manifest.yaml (generated, not hand-edited)
+make secrets-plaintext  # regenerate .secrets-plaintext (human-access creds) from secrets-manifest.yaml
+make secrets-plaintext-machine  # regenerate .secrets-plaintext-machine (raw machine-only dump, reference/backup only)
 ```
 
 ## Tool Stack
@@ -110,6 +111,7 @@ Two independent axes classify every credential in this repo - both matter, don't
 **MACHINE-ONLY vs HUMAN-ACCESS** - who needs the value:
 - *Machine-only*: consumed only by a pod/service (DB passwords, API tokens, app internal secret keys). No routine reason a human ever reads these. `sops -d` directly if you genuinely need to.
 - *Human-access*: a person types this into a login or basic-auth prompt (dashboard admin passwords, Traefik/Longhorn basic-auth). These are the only ones surfaced by `make secret` / `make secrets-plaintext`.
+- *Machine-only* secrets are still fully recoverable in git (all plain `stringData`) - they're just kept out of the human-access dump by default since there's no routine reason to see a GitHub PAT while logging into Grafana. `make secrets-plaintext-machine` regenerates a **separate** raw dump of every machine-only field (backwards-compatible reference/backup - not a login credential), kept in its own gitignored file, never merged into `.secrets-plaintext`.
 
 Which files are which is declared in `secrets-manifest.yaml` (repo root, not gitignored, contains no secret values - just pointers). Add new entries there whenever a new credential is created.
 
