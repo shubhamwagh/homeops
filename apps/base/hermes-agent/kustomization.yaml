@@ -5,6 +5,7 @@ resources:
   - serviceaccount.yaml
   - clusterrole.yaml
   - clusterrolebinding.yaml
+  - configmap-sops-recipient.yaml
   - secret.sops.yaml
   - pvc.yaml
   - deployment.yaml

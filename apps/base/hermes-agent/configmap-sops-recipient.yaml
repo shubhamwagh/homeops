@@ -1,0 +1,14 @@
+# The repo's SOPS age *public* recipient - not a secret. This is the same
+# value already committed in plaintext at the top of .sops.yaml and inside
+# the `sops.age[].recipient` field of every *.sops.yaml file in this repo.
+# Giving Hermes this ConfigMap lets it encrypt NEW credentials it creates
+# (`sops --encrypt --age <recipient> ...`) without ever needing the private
+# key (age.agekey) or any Kubernetes Secret-read RBAC - encryption-only never
+# requires decryption capability. See CLAUDE.md "Secret Handling".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sops-age-recipient
+  namespace: hermes-agent
+data:
+  recipient: age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr

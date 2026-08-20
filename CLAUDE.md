@@ -18,6 +18,8 @@ make teardown           # uninstall k3s, clean .secrets-plaintext (keeps age.age
 make nodes              # kubectl get nodes -o wide
 make flux-status        # flux get all -A
 make flux-sync          # force reconcile from git
+make secret APP=<app>   # decrypt one app's human-access credentials (see "Secret Handling")
+make secrets-plaintext  # regenerate .secrets-plaintext from secrets-manifest.yaml (generated, not hand-edited)
 ```
 
 ## Tool Stack
@@ -51,6 +53,8 @@ homeops/
 ├── Brewfile                        # brew deps: mise, age, sops, flux, jq, yq, stern
 ├── mise.toml                       # pinned: kubectl, helm, stern, age, sops, ansible, k3sup
 ├── .sops.yaml                      # age public key for secret encryption
+├── secrets-manifest.yaml           # which *.sops.yaml files are human-access vs machine-only
+├── scripts/print-secrets.py        # used by `make secret` / `make secrets-plaintext`
 ├── clusters/staging/               # Flux entry point
 │   ├── flux-system/                # gotk-components (managed by flux bootstrap)
 │   ├── infrastructure.yaml         # path: infrastructure/staging, wait:true
@@ -73,7 +77,8 @@ homeops/
     │   ├── homepage/               # dashboard - shows all services
     │   ├── tandoor/                # recipe manager (needs postgres - TODO)
     │   ├── trek/                   # travel planner (sqlite, own PVC)
-    │   └── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
+    │   ├── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
+    │   └── hermes-agent/           # self-hosted Hermes Agent, observer-only RBAC, no SSH, own PVC
     └── staging/
 ```
 
@@ -93,8 +98,38 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `better-booking-bot-webui-auth` | `better-booking-bot` | htpasswd (Traefik basic auth) |
 | `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
 | `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
+| `hermes-agent-secret` | `hermes-agent` | DASHBOARD_CREDENTIAL (ANTHROPIC_API_KEY / OPENAI_API_KEY not set yet) |
+| `hermes-agent-webui-auth` | `hermes-agent` | htpasswd (Traefik basic auth) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
+
+## Secret Handling
+
+Two independent axes classify every credential in this repo - both matter, don't conflate them.
+
+**MACHINE-ONLY vs HUMAN-ACCESS** - who needs the value:
+- *Machine-only*: consumed only by a pod/service (DB passwords, API tokens, app internal secret keys). No routine reason a human ever reads these. `sops -d` directly if you genuinely need to.
+- *Human-access*: a person types this into a login or basic-auth prompt (dashboard admin passwords, Traefik/Longhorn basic-auth). These are the only ones surfaced by `make secret` / `make secrets-plaintext`.
+
+Which files are which is declared in `secrets-manifest.yaml` (repo root, not gitignored, contains no secret values - just pointers). Add new entries there whenever a new credential is created.
+
+**Recoverable vs hash-only** - whether git can ever reproduce the plaintext:
+- *Recoverable* (`recoverable: true` in the manifest): the SOPS file stores the literal value in `stringData` - `sops -d` always gets it back. True second-source-of-truth risk is zero here; `.secrets-plaintext` is purely a convenience cache.
+- *Hash-only* (`recoverable: false`): the file stores a one-way htpasswd/bcrypt/apr1 hash (Traefik `basicAuth` needs a hash, not a password). The plaintext existed only for one moment - when the credential was created - and is gone forever afterward unless it was captured somewhere durable then. **This is the only place a plaintext store (`.secrets-plaintext` today, Vaultwarden eventually) is not redundant** - for these specific entries it is the sole record, not a convenience copy.
+
+**Workflow:**
+- `make secret APP=<app>` - decrypt and print just one app's human-access credentials.
+- `make secrets-plaintext` - regenerate the full local dump from `secrets-manifest.yaml` + the SOPS files. **This file is generated, never hand-edited** - if a value is missing from it, fix `secrets-manifest.yaml`, don't paste values in by hand. `.secrets-plaintext` stays gitignored; back it up (eventually to Vaultwarden - already deployed at `vault.shublab.com`, not yet wired into this workflow) and delete it when done, per the file's own header.
+- Whenever a **new** credential is created - by a human, by `make secrets`, or by an agent - and it's going to be stored as a hash (htpasswd, etc.), capture the plaintext into `.secrets-plaintext`/Vaultwarden **at that moment**. There is no later chance.
+
+**Letting agents (Hermes, etc.) create new credentials without ever seeing decryption:**
+SOPS encryption only requires the age **public recipient** - never the private key (`age.agekey`). The recipient (`age1nhpn7w8hv4x7lfwc7a8r4ycwvcqn6tz6tekhnlahc67l7ngt8y5qdqhxsr`) is not secret - it's already committed in plaintext in `.sops.yaml` and in every `*.sops.yaml` file's own `sops.age[].recipient` field. Hermes gets this value via the non-secret `sops-age-recipient` ConfigMap in its own namespace (readable under its existing observer RBAC - `configmaps` get/list/watch - no permission change needed). To create a new secret it should:
+1. Generate the plaintext value itself (never ask a human for one to relay through it).
+2. Immediately run `sops --encrypt --age "$(cat recipient)" <plaintext-manifest.yaml>` (fetching the `sops`/`age` static binaries into its own workspace if not already present - no root needed, they're plain Go binaries).
+3. Return **only** the encrypted output in its response - never echo the plaintext back, never write it to `/opt/data/memories` or anywhere else persistent.
+4. A human copies the encrypted file into the repo, adds it to `secrets-manifest.yaml`, reviews, commits and pushes. Hermes has no git write access in this phase - that boundary is deliberate (see the hermes-agent app's own docs / ClusterRole).
+
+**Never expose plaintext in**: CI logs (the `ci.yml` SOPS check only greps for `ENC[`, never decrypts), Hermes's own chat output for anything beyond the single moment described above, Git (enforced by the CI check), or persistent agent memory (Claude's own memory files and Hermes's `/opt/data/memories` should only ever contain pointers like "see `.secrets-plaintext`" or "see Vaultwarden", never a value).
 
 ## Services
 
@@ -110,6 +145,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | TREK | `trek.shublab.com` | `trek` |
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
+| Hermes Agent | `hermes.shublab.com` | `hermes-agent` |
 
 ## Key Versions
 

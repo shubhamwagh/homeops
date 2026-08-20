@@ -14,7 +14,7 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
         tailscale teardown-tailscale \
         headscale-install headscale-teardown headscale-approve-routes \
-        check
+        check secret secrets-plaintext
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -169,10 +169,10 @@ secrets: ensure-age-key
 	   "$(CLOUDFLARE_TOKEN)" > infrastructure/base/networking/cert-manager/secret-cloudflare.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: searxng-secret\n  namespace: searxng\nstringData:\n  secret-key: "%s"\n' \
 	   "$$SEARXNG_SECRET" > infrastructure/base/searxng/secret.sops.yaml; \
-	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: longhorn-basic-auth\n  namespace: longhorn-system\ndata:\n  users: "%s"\n' \
-	   "$$(printf '%s' "$$LONGHORN_HTPASSWD" | base64)" > infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
-	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: traefik-dashboard-auth\n  namespace: traefik\nstringData:\n  users: "%s"\n' \
-	   "$$TRAEFIK_HTPASSWD" > infrastructure/base/networking/traefik/secret-dashboard-auth.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: longhorn-basic-auth\n  namespace: longhorn-system\ndata:\n  users: "%s"\nstringData:\n  password: "%s"\n' \
+	   "$$(printf '%s' "$$LONGHORN_HTPASSWD" | base64)" "$$LONGHORN_PASS" > infrastructure/base/storage/longhorn/secret-basic-auth.sops.yaml; \
+	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: traefik-dashboard-auth\n  namespace: traefik\nstringData:\n  users: "%s"\n  password: "%s"\n' \
+	   "$$TRAEFIK_HTPASSWD" "$$TRAEFIK_PASS" > infrastructure/base/networking/traefik/secret-dashboard-auth.sops.yaml; \
 	 printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: trek-secret\n  namespace: trek\nstringData:\n  ENCRYPTION_KEY: "%s"\n  ADMIN_EMAIL: "shubhamwagh48@gmail.com"\n  ADMIN_PASSWORD: "%s"\n' \
 	   "$$TREK_ENCRYPTION_KEY" "$$TREK_ADMIN_PASS" > apps/base/trek/secret.sops.yaml; \
 	 sops --encrypt --in-place infrastructure/base/monitoring/kube-prometheus-stack/secret-grafana-admin.sops.yaml; \
@@ -187,6 +187,31 @@ secrets: ensure-age-key
 	 printf '# Back these up securely then delete this file\ngrafana:          %s\ntandoor-key:      %s\ntandoor-db:       %s\nsearxng-secret:   %s\nlonghorn:         admin / %s\ntraefik:          admin / %s\ntrek-key:         %s\ntrek-admin:       shubham.wagh@hiveautonomy.com / %s\n' \
 	   "$$GRAFANA_PASS" "$$TANDOOR_KEY" "$$TANDOOR_DB_PASS" "$$SEARXNG_SECRET" "$$LONGHORN_PASS" "$$TRAEFIK_PASS" "$$TREK_ENCRYPTION_KEY" "$$TREK_ADMIN_PASS" > .secrets-plaintext; \
 	 echo "All secrets encrypted. Plaintext saved to .secrets-plaintext"
+
+# Decrypt one app's HUMAN-ACCESS credentials only (see secrets-manifest.yaml
+# and CLAUDE.md "Secret Handling"). MACHINE-ONLY secrets are never touched by
+# this target - use `sops -d <file>` directly if you genuinely need one.
+# Usage: make secret APP=hermes-agent
+secret:
+	@test -n "$(APP)" || (echo "Usage: make secret APP=<app>" && exit 1)
+	@python3 scripts/print-secrets.py $(APP)
+
+# Regenerate the full local plaintext convenience dump from the SOPS files
+# themselves. .secrets-plaintext is GENERATED, never hand-maintained - it is
+# not a second source of truth for anything sops can still decrypt. The
+# exception is [HASH ONLY] entries (htpasswd/bcrypt secrets): for those the
+# plaintext only ever existed at creation time, so this file (or Vaultwarden)
+# is the sole record - back it up before deleting it.
+secrets-plaintext:
+	@{ \
+	  echo "# HUMAN-ACCESS secrets, regenerated $$(date -u +%Y-%m-%dT%H:%M:%SZ) from secrets-manifest.yaml."; \
+	  echo "# Source of truth is always the encrypted *.sops.yaml files - see CLAUDE.md 'Secret Handling'."; \
+	  echo "# [HASH ONLY] entries: plaintext isn't stored in git at all - this file (or Vaultwarden) is the only record."; \
+	  echo "# Back this file up securely and delete it when done."; \
+	  echo ""; \
+	  python3 scripts/print-secrets.py; \
+	} > .secrets-plaintext
+	@echo "Regenerated .secrets-plaintext"
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
 flux-commit-secrets:
