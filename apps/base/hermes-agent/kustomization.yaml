@@ -4,11 +4,9 @@ resources:
   - namespace.yaml
   - pvc.yaml
   - secret.sops.yaml
-  - secret-ssh.sops.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-# ANTHROPIC_API_KEY / OPENAI_API_KEY intentionally omitted from
-# secret.sops.yaml — model provider not decided yet. Add them (and set
-# `model:` via the dashboard/webui) whenever that's picked; envFrom just
-# won't export those two vars until then, everything else still runs.
+# SSH access to node3/laptop removed 2026-08-21 - agent is chat/webui only
+# again, no host access. ANTHROPIC_API_KEY / OPENAI_API_KEY also still
+# not set (Nous Portal free tier in use instead).
