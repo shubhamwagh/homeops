@@ -1,0 +1,70 @@
+# hermes-critical-operator: RED-tier destructive permissions. This ClusterRole
+# existing does nothing on its own - it is deliberately never bound to the
+# hermes-homelab ServiceAccount (see serviceaccount-critical.yaml and
+# CLAUDE.md "Hermes Autonomy Policy"). It only becomes active for a short,
+# audited window via `make hermes-elevate`, run by Shubham after explicitly
+# approving a specific RED action.
+#
+# Secrets are excluded here too, on purpose - RBAC breadth for destructive
+# cluster operations does not imply a need to read credential values. The
+# SOPS encrypt-only architecture (AGE public recipient only, no private key,
+# no Secret RBAC) stays unchanged regardless of elevation tier.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hermes-critical-operator
+rules:
+  # Data/storage - the actually destructive, data-loss-capable operations
+  - apiGroups: [""]
+    resources:
+      - persistentvolumeclaims
+      - persistentvolumes
+    verbs: [delete]
+  - apiGroups: ["longhorn.io"]
+    resources:
+      - volumes
+      - replicas
+      - backups
+      - backuptargets
+      - recurringjobs
+      - snapshots
+    verbs: [delete]
+
+  # Cluster/host - namespace deletion, CRD deletion, node drain
+  - apiGroups: [""]
+    resources:
+      - namespaces
+    verbs: [delete]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources:
+      - customresourcedefinitions
+    verbs: [get, list, watch, delete]
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs: [update, patch]
+  - apiGroups: [""]
+    resources:
+      - pods/eviction
+    verbs: [create]
+
+  # Security - RBAC and ServiceAccount mutation, including Hermes' own
+  # privileges. Explicitly excludes Secrets (see header comment).
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - clusterroles
+      - clusterrolebindings
+      - roles
+      - rolebindings
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts
+    verbs: [get, list, watch, create, update, patch, delete]
+
+# Not granted even here: secrets (any apiGroup), pods/exec, pods/attach,
+# pods/portforward, certificatesigningrequests/approval, cilium.io writes,
+# or any wildcard resource/verb. Database-drop/destructive-migration/disk-
+# format style RED actions are application- or host-level, not expressible
+# as Kubernetes RBAC, and stay entirely outside what any Hermes identity can
+# do - those require a human at a terminal, always.

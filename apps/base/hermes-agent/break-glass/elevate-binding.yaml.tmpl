@@ -1,0 +1,25 @@
+# Template - applied ONLY by `make hermes-elevate` via direct `kubectl apply`,
+# NEVER via Flux/GitOps (deliberately not listed in kustomization.yaml, so
+# Flux's prune never touches it). Grants the hermes-homelab ServiceAccount
+# the RED-tier hermes-critical-operator ClusterRole for a short, audited
+# window - the accompanying self-revoking Job deletes this binding after
+# the approved TTL.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hermes-critical-operator-elevated
+  labels:
+    homeops.io/break-glass: "true"
+  annotations:
+    homeops.io/elevated-at: "__ELEVATED_AT__"
+    homeops.io/elevated-by: "shubham"
+    homeops.io/elevated-reason: "__REASON__"
+    homeops.io/ttl-minutes: "__TTL_MINUTES__"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-critical-operator
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent

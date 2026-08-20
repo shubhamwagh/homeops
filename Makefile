@@ -14,7 +14,8 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         flux-create-sops-secret flux-bootstrap flux-status flux-sync \
         tailscale teardown-tailscale \
         headscale-install headscale-teardown headscale-approve-routes \
-        check secret secrets-plaintext secrets-plaintext-machine
+        check secret secrets-plaintext secrets-plaintext-machine \
+        hermes-elevate hermes-revoke hermes-elevate-status
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -226,6 +227,40 @@ secrets-plaintext-machine:
 	  python3 scripts/print-secrets.py --machine-only; \
 	} > .secrets-plaintext-machine
 	@echo "Regenerated .secrets-plaintext-machine"
+
+# Break-glass: grant hermes-homelab the RED-tier hermes-critical-operator
+# ClusterRole for a short, audited window - run this ONLY after Shubham has
+# explicitly approved a specific RED action Hermes proposed. Applied directly
+# via kubectl, never through Flux/GitOps - a self-revoking Job removes the
+# binding automatically after TTL_MINUTES (default 15).
+# Usage: make hermes-elevate REASON="delete orphaned PVC xyz" [TTL_MINUTES=15]
+hermes-elevate:
+	@test -n "$(REASON)" || (echo "Usage: make hermes-elevate REASON=\"<what was approved>\" [TTL_MINUTES=15]" && exit 1)
+	@TTL=$${TTL_MINUTES:-15}; \
+	 TTL_SECONDS=$$((TTL * 60)); \
+	 NOW=$$(date -u +%Y-%m-%dT%H:%M:%SZ); \
+	 SUFFIX=$$(date +%s); \
+	 echo "Elevating hermes-homelab to hermes-critical-operator for $$TTL minute(s)."; \
+	 echo "Reason: $(REASON)"; \
+	 read -rp "Confirm you (Shubham) approved this - type 'yes': " CONFIRM; \
+	 [ "$$CONFIRM" = "yes" ] || (echo "Aborted." && exit 1); \
+	 sed -e "s/__ELEVATED_AT__/$$NOW/" -e "s#__REASON__#$(REASON)#" -e "s/__TTL_MINUTES__/$$TTL/" \
+	   apps/base/hermes-agent/break-glass/elevate-binding.yaml.tmpl | kubectl apply -f -; \
+	 sed -e "s/__JOB_SUFFIX__/$$SUFFIX/g" -e "s/__TTL_MINUTES__/$$TTL/g" -e "s/__TTL_SECONDS__/$$TTL_SECONDS/g" \
+	     -e "s/__ACTIVE_DEADLINE_SECONDS__/$$((TTL_SECONDS + 120))/" \
+	   apps/base/hermes-agent/break-glass/elevate-revoke-job.yaml.tmpl | kubectl apply -f -; \
+	 echo "Elevated. Will self-revoke in $$TTL minute(s). Force revoke now: make hermes-revoke"
+
+# Immediately revoke an active elevation (don't wait for the Job's TTL)
+hermes-revoke:
+	kubectl delete clusterrolebinding hermes-critical-operator-elevated --ignore-not-found
+	@echo "Revoked (if it was active)."
+
+# Show whether an elevation is currently active
+hermes-elevate-status:
+	@kubectl get clusterrolebinding hermes-critical-operator-elevated -o yaml 2>/dev/null \
+	  | grep -E "elevated-at|elevated-reason|ttl-minutes" \
+	  || echo "No active elevation."
 
 # Commit updated .sops.yaml + encrypted secrets and push to git
 flux-commit-secrets:

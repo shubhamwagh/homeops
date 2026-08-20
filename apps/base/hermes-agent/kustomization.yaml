@@ -5,6 +5,9 @@ resources:
   - serviceaccount.yaml
   - clusterrole.yaml
   - clusterrolebinding.yaml
+  - serviceaccount-critical.yaml
+  - clusterrole-critical.yaml
+  - elevation-revoker.yaml
   - configmap-sops-recipient.yaml
   - secret.sops.yaml
   - pvc.yaml
@@ -14,7 +17,11 @@ resources:
   - secret-webui-auth.sops.yaml
   - secret-webui-auth-plaintext.sops.yaml
   - ingress.yaml
-# Observability-first, least-privilege deployment (phase 1). ClusterRole
-# grants get/list/watch only, no Secrets access anywhere, no exec/attach/
-# port-forward, no node/host access, no SSH. Model provider (ANTHROPIC_API_KEY /
-# OPENAI_API_KEY) intentionally not set - decide and add via `sops` later.
+# High-autonomy operator tier (see CLAUDE.md "Hermes Autonomy Policy").
+# hermes-operator (bound) covers ordinary GREEN/YELLOW write access to
+# workload resources; hermes-critical-operator (defined, never bound by
+# default) covers RED-tier destructive ops, activated only via
+# `make hermes-elevate` after explicit approval. Still zero Secrets access,
+# zero exec/attach/port-forward, zero node/host access, zero SSH - always,
+# elevated or not. Model provider (ANTHROPIC_API_KEY / OPENAI_API_KEY)
+# intentionally not set - decide and add via `sops` later.

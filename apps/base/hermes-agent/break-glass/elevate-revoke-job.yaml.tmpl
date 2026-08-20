@@ -1,0 +1,34 @@
+# Template - applied ONLY by `make hermes-elevate`, alongside elevate-binding.yaml.tmpl.
+# Self-revokes the elevation after TTL_MINUTES by deleting the fixed-name
+# ClusterRoleBinding, using the narrowly-scoped hermes-elevation-revoker
+# identity (elevation-revoker.yaml) which can delete *only* that one named
+# object. Runs once, then completes - nothing to clean up manually beyond
+# the finished Job/Pod (kept for audit, TTL via Kubernetes' own job history).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hermes-elevate-revoke-__JOB_SUFFIX__
+  namespace: hermes-agent
+  labels:
+    homeops.io/break-glass: "true"
+spec:
+  activeDeadlineSeconds: __ACTIVE_DEADLINE_SECONDS__
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        homeops.io/break-glass: "true"
+    spec:
+      serviceAccountName: hermes-elevation-revoker
+      restartPolicy: Never
+      containers:
+        - name: revoke
+          image: bitnami/kubectl:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Elevation active for __TTL_MINUTES__ minutes - will revoke at $(date -u -d "+__TTL_MINUTES__ minutes" +%FT%TZ 2>/dev/null || date -u)"
+              sleep __TTL_SECONDS__
+              kubectl delete clusterrolebinding hermes-critical-operator-elevated --ignore-not-found
+              echo "Revoked hermes-critical-operator-elevated"
