@@ -259,6 +259,7 @@ is unexpected and should be investigated, not used.
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 | IT-Tools | `it-tools.shublab.com` | `it-tools` |
+| Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Hermes Agent | `hermes.shublab.com` | `hermes-agent` |
 
 ## Key Versions

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          # Mailpit: zero-dependency SMTP test server + web UI. Acts as a dev
+          # mail catcher for the homelab's own apps (car-health-check,
+          # better-booking-bot, etc.) so outbound email can be inspected without
+          # a real mail server. In-memory message store by default (no PVC
+          # needed); SMTP listens on 1025, web UI on 8025. Web UI is gated by
+          # Traefik basicAuth (see middleware-auth.yaml) - the credentials are
+          # created out of band via `make hermes-secret`.
+          image: axllent/mailpit:v1.30.7
+          env:
+            # Accept any SMTP auth so apps can relay without real credentials.
+            - name: MP_SMTP_AUTH_ACCEPT_ANY
+              value: "1"
+            - name: MP_SMTP_AUTH_ALLOW_INSECURE
+              value: "1"
+            # No app-level UI auth; Traefik basicAuth is the gate.
+            - name: MP_UI_AUTH
+              value: "none"
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: http
+              containerPort: 8025
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8025
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8025
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
