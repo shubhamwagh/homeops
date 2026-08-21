@@ -9,3 +9,4 @@ resources:
   - car-health-check
   - ntfy
   - hermes-agent
+  - it-tools
