@@ -7,3 +7,4 @@ resources:
   - controllers
   - security
   - searxng
+  - github-token-broker

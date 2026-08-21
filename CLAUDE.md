@@ -100,6 +100,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `car-health-check-secret` | `car-health-check` | ZYFY_API_KEY, MOT_CLIENT_ID, MOT_CLIENT_SECRET, MOT_API_KEY, MOT_TOKEN_URL, MOT_SCOPE_URL |
 | `car-health-check-webui-auth` | `car-health-check` | htpasswd (Traefik basic auth) |
 | `hermes-agent-secret` | `hermes-agent` | DASHBOARD_CREDENTIAL (ANTHROPIC_API_KEY / OPENAI_API_KEY not set yet) |
+| `github-app-private-key` | `github-token-broker` | GitHub App PEM for `Hermes Blog Reviewer` (App 4669702, `shubhamwagh/blog` only) - never read by Hermes |
 | `hermes-agent-webui-auth` | `hermes-agent` | htpasswd (Traefik basic auth) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
@@ -183,7 +184,37 @@ Recommended mechanism, in preference order:
 2. Fallback: a **fine-grained personal access token**, scoped to only `shubhamwagh/homeops`, `contents: write` only, with an expiration date - strictly worse than a GitHub App (still a static bearer credential, no automatic rotation) but far narrower than a classic PAT or Shubham's own broad credential.
 3. Never: Shubham's own personal GitHub credential, a classic PAT, or any org/account-wide token.
 
-Recommended workflow once provisioned: Hermes pushes to a branch and opens a PR rather than pushing directly to `main`, at least until the autonomy model has run long enough to trust unattended direct pushes - matching the same "prove it, then loosen it" pattern used for the RBAC tiers above. **Not implemented** - no App, token, or credential exists yet; this is a proposal for Shubham to approve before any provisioning happens.
+Recommended workflow once provisioned: Hermes pushes to a branch and opens a PR rather than pushing directly to `main`, at least until the autonomy model has run long enough to trust unattended direct pushes - matching the same "prove it, then loosen it" pattern used for the RBAC tiers above. **Not implemented for homeops itself** - no App, token, or credential exists yet for the homeops repo. A separate, narrower integration for a *different* repo does exist - see below.
+
+## GitHub App Token Broker (`shubhamwagh/blog` only, live)
+
+Hermes has git access to exactly one repo today: `shubhamwagh/blog`, via a dedicated GitHub App (`Hermes Blog Reviewer`, App ID `4669702`, `Contents: write` + `Pull requests: write`, installed only on that repo) - **not** the homeops App discussed above, which remains unprovisioned. This is a completely separate credential from anything else in this repo, on purpose - a compromised or misused blog-writing token has no path to homeops.
+
+Hermes never holds the App's private key. Architecture:
+
+```
+Hermes (its own projected K8s SA token)
+       │ POST http://github-token-broker.github-token-broker.svc.cluster.local/v1/token
+       │ Authorization: Bearer <SA token>
+       ▼
+github-token-broker (infrastructure/base/github-token-broker/, own namespace)
+       │ 1. TokenReview the SA token against the K8s API - reject unless it's
+       │    exactly system:serviceaccount:hermes-agent:hermes-homelab
+       │ 2. Sign a GitHub App JWT with the mounted private key (never returned/logged)
+       │ 3. GET /repos/shubhamwagh/blog/installation - discovers the installation live
+       │ 4. POST /app/installations/{id}/access_tokens
+       ▼
+{ "token": "ghs_...", "expires_at": "...", "repository": "shubhamwagh/blog" }
+```
+
+Key properties:
+- **Deliberately under `infrastructure/base/`, not `apps/base/`** - the same mechanism that keeps `hermes-operator-write` scoped to the 8 ordinary namespaces also means this namespace never gets a write RoleBinding automatically. Hermes can see the broker exists (cluster-wide read) but cannot modify its Deployment or read its Secret - Secrets are excluded from every Hermes role regardless.
+- **No shared secret** between Hermes and the broker - the broker authenticates callers using their own Kubernetes identity via `TokenReview`, so there's nothing extra to provision, rotate, or leak on the calling side.
+- **CiliumNetworkPolicy** (`networkpolicy.yaml`) restricts inbound connections to the broker's port to the `hermes-agent` namespace only - defense in depth alongside the TokenReview check.
+- **The broker's own RBAC is one verb**: `create` on `tokenreviews.authentication.k8s.io`, cluster-scoped, nothing else. It doesn't need permission to read its own mounted Secret - that's a kubelet-managed volume mount, not an RBAC-gated API read.
+- **Nothing persisted**: tokens are minted fresh per request, never cached, never logged. Only `expires_at` and the calling identity are logged.
+- Source: [`shubhamwagh/github-app-token-broker`](https://github.com/shubhamwagh/github-app-token-broker) - stdlib HTTP server + exactly one third-party dependency (`cryptography`, for RSA-SHA256 JWT signing), kept intentionally small enough to read in one sitting since it's the one place a real long-lived credential lives.
+- **Deployment model is one broker instance per `(App, repo)` pair, never multi-tenant** - a future homeops App, or any other future integration, gets its own namespace/Secret/NetworkPolicy/instance of the same image, not a shared credential store. See the broker repo's own README for the reasoning.
 
 ## Services
 

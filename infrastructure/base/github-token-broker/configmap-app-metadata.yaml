@@ -1,0 +1,15 @@
+# Non-secret App metadata (App ID, Client ID, target repo are identifiers,
+# not credentials - only the private key itself is sensitive, see
+# secret-app-key.sops.yaml). One instance of this broker = one (App, repo)
+# pair, per the "deploy again per integration" model in the broker's own
+# README - do not add a second repo/App here, deploy a second instance.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-token-broker-config
+  namespace: github-token-broker
+data:
+  GITHUB_APP_ID: "4669702"
+  GITHUB_APP_CLIENT_ID: "Iv23li9hUKlzmL9QSAzP"
+  GITHUB_TARGET_REPO: "shubhamwagh/blog"
+  EXPECTED_CALLER_USERNAME: "system:serviceaccount:hermes-agent:hermes-homelab"
