@@ -242,6 +242,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 | IT-Tools | `it-tools.shublab.com` | `it-tools` |
+| Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 
