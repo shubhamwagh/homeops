@@ -29,9 +29,12 @@ spec:
               value: "1"
             - name: MP_SMTP_AUTH_ALLOW_INSECURE
               value: "1"
-            # No app-level UI auth; Traefik basicAuth is the gate.
-            - name: MP_UI_AUTH
-              value: "none"
+            # No MP_UI_AUTH var here on purpose: Mailpit enables its own auth
+            # the moment this var is SET to any value (including "none",
+            # which isn't valid credentials and made every request - even the
+            # liveness probe - get 401'd and crash-loop indefinitely).
+            # Omitting it entirely is the actual way to disable app-level
+            # auth; Traefik basicAuth (middleware-auth.yaml) is the real gate.
           ports:
             - name: smtp
               containerPort: 1025
