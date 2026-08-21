@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-homeops-broker
+  namespace: github-homeops-broker
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: github-homeops-broker
+  template:
+    metadata:
+      labels:
+        app: github-homeops-broker
+    spec:
+      serviceAccountName: github-homeops-broker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: broker
+          image: ghcr.io/shubhamwagh/github-app-token-broker:530f8b8ef7ac9357edc32788c6cb04b39adb2a6a
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - configMapRef:
+                name: github-homeops-broker-config
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: app-key
+              mountPath: /etc/github-app
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: app-key
+          secret:
+            secretName: github-homeops-app-key
+            defaultMode: 0440

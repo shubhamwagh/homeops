@@ -1,0 +1,37 @@
+# The broker's own identity, used only to call the Kubernetes TokenReview
+# API to verify a caller's ServiceAccount token. One verb, one resource,
+# cluster-scoped, nothing else - it does not need any permission to read
+# its own mounted Secret (that's handled by the kubelet at pod-start via
+# the volume mount, not the pod's own RBAC).
+#
+# ClusterRole/ClusterRoleBinding names are suffixed uniquely because those
+# two objects are cluster-scoped and would otherwise collide with the
+# sibling github-token-broker (blog) instance's identically-shaped RBAC.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github-homeops-broker
+  namespace: github-homeops-broker
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: github-homeops-broker-tokenreview
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources:
+      - tokenreviews
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: github-homeops-broker-tokenreview
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: github-homeops-broker-tokenreview
+subjects:
+  - kind: ServiceAccount
+    name: github-homeops-broker
+    namespace: github-homeops-broker

@@ -8,3 +8,4 @@ resources:
   - security
   - searxng
   - github-token-broker
+  - github-homeops-broker

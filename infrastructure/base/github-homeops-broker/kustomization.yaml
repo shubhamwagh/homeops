@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - configmap-app-metadata.yaml
+  - secret-app-key.sops.yaml
+  - deployment.yaml
+  - service.yaml
+  - networkpolicy.yaml
+# "Hermes HomeOps Agent" broker - Contents+PR write on shubhamwagh/homeops
+# ONLY. Deliberately a separate namespace/Secret/ClusterRole/NetworkPolicy
+# from github-token-broker (blog) - see configmap-app-metadata.yaml for the
+# reasoning. Deliberately under infrastructure/, not apps/base/, so it never
+# gets hermes-operator-write access automatically - see CLAUDE.md "Hermes
+# Autonomy Policy" for why that's what actually keeps this Deployment/Secret
+# un-mutable by Hermes.

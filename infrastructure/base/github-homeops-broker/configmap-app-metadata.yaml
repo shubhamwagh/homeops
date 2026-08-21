@@ -1,0 +1,23 @@
+# Non-secret App metadata (App ID, Client ID, target repo are identifiers,
+# not credentials - only the private key itself is sensitive, see
+# secret-app-key.sops.yaml).
+#
+# This is "Hermes HomeOps Agent" (App 4673696), Contents:write +
+# Pull requests:write on shubhamwagh/homeops ONLY - the cluster's own
+# GitOps source of truth, not the blog. A separate App/broker/namespace/
+# Secret from github-token-broker (blog) on purpose: a compromise of one
+# instance's mounted PEM has no path to the other App's key or repo.
+# Branch protection on homeops main (PR + 1 approval + "Validate" CI check
+# required, enforced for admins) is what actually stops this credential
+# from landing anything on main without human review - not the App's
+# permission scope, same as the blog identity's design.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: github-homeops-broker-config
+  namespace: github-homeops-broker
+data:
+  GITHUB_APP_ID: "4673696"
+  GITHUB_APP_CLIENT_ID: "Iv23lizFD11cyR6PGLRL"
+  GITHUB_TARGET_REPO: "shubhamwagh/homeops"
+  EXPECTED_CALLER_USERNAME: "system:serviceaccount:hermes-agent:hermes-homelab"
