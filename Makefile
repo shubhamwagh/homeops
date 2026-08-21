@@ -257,7 +257,8 @@ hermes-secret:
 	sops --encrypt --in-place "$$HASH_FILE"; \
 	sops --encrypt --in-place "$$PLAIN_FILE"; \
 	python3 scripts/register-human-secret.py "$$PLAIN_FILE" "$(NAMESPACE)-webui" "stringData.password" "true"; \
-	git add "$$HASH_FILE" "$$PLAIN_FILE" secrets-manifest.yaml; \
+	python3 scripts/add-kustomize-resources.py "$$DIR/kustomization.yaml" "secret-$(NAME).sops.yaml" "secret-$(NAME)-plaintext.sops.yaml"; \
+	git add "$$HASH_FILE" "$$PLAIN_FILE" "$$DIR/kustomization.yaml" secrets-manifest.yaml; \
 	git commit -m "$(NAMESPACE): add basicAuth secret for PR #$(PR)" --quiet; \
 	git push; \
 	echo ""; \
