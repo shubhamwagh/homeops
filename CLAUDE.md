@@ -188,7 +188,7 @@ Recommended workflow once provisioned: Hermes pushes to a branch and opens a PR 
 
 ## GitHub App Token Broker (`shubhamwagh/blog` only, live)
 
-Hermes has git access to exactly one repo today: `shubhamwagh/blog`, via a dedicated GitHub App (`Hermes Blog Reviewer`, App ID `4669702`, `Contents: write` + `Pull requests: write`, installed only on that repo) - **not** the homeops App discussed above, which remains unprovisioned. This is a completely separate credential from anything else in this repo, on purpose - a compromised or misused blog-writing token has no path to homeops.
+Hermes has one scoped credential path today, to `shubhamwagh/blog`, via a dedicated GitHub App (`Hermes Blog Reviewer`, App ID `4669702`) - **not** the homeops App discussed above, which remains unprovisioned. **This is a reviewer identity, not an authoring one** - confirmed live via `GET /installation/repositories` on a real minted token, which returned `"push": false`. The App holds `pull_requests: write` + `checks: read` only, no `contents` permission at all. It exists to let Hermes approve/comment on a blog PR under a genuinely separate GitHub identity from whoever authored it (solving the self-review problem - the same account approving its own PR isn't a real four-eyes gate) - it cannot clone, commit, or push. Authoring/publishing a post still needs a different, unprovisioned credential; see the `homelab-blog-authoring` and `hermes-blog-reviewer` skills (Hermes's own PVC) for the full division of responsibility. This is a completely separate credential from anything else in this repo, on purpose - a compromised or misused review token has no path to homeops or to writing blog content.
 
 Hermes never holds the App's private key. Architecture:
 
