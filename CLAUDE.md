@@ -184,7 +184,7 @@ Recommended mechanism, in preference order:
 2. Fallback: a **fine-grained personal access token**, scoped to only `shubhamwagh/homeops`, `contents: write` only, with an expiration date - strictly worse than a GitHub App (still a static bearer credential, no automatic rotation) but far narrower than a classic PAT or Shubham's own broad credential.
 3. Never: Shubham's own personal GitHub credential, a classic PAT, or any org/account-wide token.
 
-Recommended workflow once provisioned: Hermes pushes to a branch and opens a PR rather than pushing directly to `main`, at least until the autonomy model has run long enough to trust unattended direct pushes - matching the same "prove it, then loosen it" pattern used for the RBAC tiers above. **Not implemented for homeops itself** - no App, token, or credential exists yet for the homeops repo. A separate, narrower integration for a *different* repo does exist - see below.
+Recommended workflow once provisioned: Hermes pushes to a branch and opens a PR rather than pushing directly to `main`, at least until the autonomy model has run long enough to trust unattended direct pushes - matching the same "prove it, then loosen it" pattern used for the RBAC tiers above. **Implemented as of 2026-08-21** - see "GitHub App Token Broker #2" below.
 
 ## GitHub App Token Broker (`shubhamwagh/blog` only, live)
 
@@ -215,6 +215,34 @@ Key properties:
 - **Nothing persisted**: tokens are minted fresh per request, never cached, never logged. Only `expires_at` and the calling identity are logged.
 - Source: [`shubhamwagh/github-app-token-broker`](https://github.com/shubhamwagh/github-app-token-broker) - stdlib HTTP server + exactly one third-party dependency (`cryptography`, for RSA-SHA256 JWT signing), kept intentionally small enough to read in one sitting since it's the one place a real long-lived credential lives.
 - **Deployment model is one broker instance per `(App, repo)` pair, never multi-tenant** - a future homeops App, or any other future integration, gets its own namespace/Secret/NetworkPolicy/instance of the same image, not a shared credential store. See the broker repo's own README for the reasoning.
+
+## GitHub App Token Broker #2 (`shubhamwagh/homeops`, live)
+
+A second, independent instance of the broker pattern above, paired with a second GitHub App
+(`Hermes HomeOps Agent`, App ID `4673696`) installed only on `shubhamwagh/homeops` itself -
+this is the App the "Git write access" section above was written before. `Contents: Read &
+write` + `Pull requests: Read & write` - confirmed live via a real write test (create+delete a
+throwaway branch through a minted token). This is the cluster's own GitOps source of truth, not
+a blog - treat this credential as more sensitive than the blog one; branch protection on `main`
+(PR + 1 approving review + the `Validate` CI check, enforced for admins too) is what actually
+keeps it from landing anything without human review, not the App's permission scope.
+
+Architecture, namespace isolation, and TokenReview-based auth are identical to the blog broker
+(own namespace `github-homeops-broker`, own ClusterRole/ClusterRoleBinding suffixed uniquely to
+avoid colliding with the blog broker's, own CiliumNetworkPolicy, same
+`EXPECTED_CALLER_USERNAME: system:serviceaccount:hermes-agent:hermes-homelab`). Get a token via
+`homelab-feature-implementer`'s `scripts/get-homeops-token.sh`; the shared `homelab-pr-authoring`
+skill documents the full open-PR-and-verify flow any `homelab-*` specialist can use once it has
+a concrete, safe (GREEN/YELLOW) fix - never RED-tier changes without Shubham's prior approval,
+and never bundle an RBAC change into the same PR as an unrelated fix (see `/opt/data/memories/
+homeops.md` for why that specific mistake matters).
+
+**A pre-existing, unrelated ambient `gh auth` login (broad `repo` scope, account
+`shubhamwagh`) was discovered on Hermes's pod on 2026-08-21 and removed.** It predated this
+broker and is the actual explanation for how an earlier session pushed directly under Shubham's
+own GitHub identity without going through any scoped credential - not a flaw in the broker
+design itself. If `gh auth status` ever again shows a logged-in account on the Hermes pod, that
+is unexpected and should be investigated, not used.
 
 ## Services
 
