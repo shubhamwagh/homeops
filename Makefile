@@ -15,7 +15,7 @@ export SOPS_AGE_KEY_FILE := $(CURDIR)/age.agekey
         tailscale teardown-tailscale \
         headscale-install headscale-teardown headscale-approve-routes \
         check secret secrets-plaintext secrets-plaintext-machine \
-        hermes-elevate hermes-revoke hermes-elevate-status
+        hermes-elevate hermes-revoke hermes-elevate-status hermes-secret
 
 # ─── tooling ───────────────────────────────────────────────────────────────
 
@@ -227,6 +227,41 @@ secrets-plaintext-machine:
 	  python3 scripts/print-secrets.py --machine-only; \
 	} > .secrets-plaintext-machine
 	@echo "Regenerated .secrets-plaintext-machine"
+
+# Complete a Hermes-opened PR's basicAuth secret in one command. The password
+# is generated HERE, locally, never by Hermes or through its broker - Hermes's
+# PR ships every manifest except this file, and this target is how a human
+# fills the gap without hand-running 8 separate commands. Writes the same
+# hash-Secret + recoverable-plaintext-companion pair used by every other
+# *-webui-auth in this repo (car-health-check, better-booking-bot, hermes-agent,
+# traefik, longhorn), encrypts both, registers the plaintext in
+# secrets-manifest.yaml, and pushes onto Hermes's own PR branch - so the PR
+# ends up complete without ever routing the password through Hermes.
+# Usage: make hermes-secret PR=42 NAME=newapp-webui-auth NAMESPACE=newapp [USER=shubham]
+hermes-secret:
+	@test -n "$(PR)" || (echo "Usage: make hermes-secret PR=<pr-number> NAME=<secret-name> NAMESPACE=<namespace> [USER=shubham]" && exit 1)
+	@test -n "$(NAME)" || (echo "Usage: make hermes-secret PR=<pr-number> NAME=<secret-name> NAMESPACE=<namespace> [USER=shubham]" && exit 1)
+	@test -n "$(NAMESPACE)" || (echo "Usage: make hermes-secret PR=<pr-number> NAME=<secret-name> NAMESPACE=<namespace> [USER=shubham]" && exit 1)
+	@USERNAME="$${USER_OVERRIDE:-$(or $(USER),shubham)}"; \
+	gh pr checkout $(PR); \
+	DIR="apps/base/$(NAMESPACE)"; \
+	mkdir -p "$$DIR"; \
+	HASH_FILE="$$DIR/secret-$(NAME).sops.yaml"; \
+	PLAIN_FILE="$$DIR/secret-$(NAME)-plaintext.sops.yaml"; \
+	PASSWORD=$$(openssl rand -base64 24); \
+	HASH=$$(htpasswd -nbB "$$USERNAME" "$$PASSWORD"); \
+	printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: %s\n  namespace: %s\nstringData:\n  users: |\n    %s\n' \
+	  "$(NAME)" "$(NAMESPACE)" "$$HASH" > "$$HASH_FILE"; \
+	printf 'apiVersion: v1\nkind: Secret\nmetadata:\n  name: %s-plaintext\n  namespace: %s\nstringData:\n  password: %s\n' \
+	  "$(NAME)" "$(NAMESPACE)" "$$PASSWORD" > "$$PLAIN_FILE"; \
+	sops --encrypt --in-place "$$HASH_FILE"; \
+	sops --encrypt --in-place "$$PLAIN_FILE"; \
+	python3 scripts/register-human-secret.py "$$PLAIN_FILE" "$(NAMESPACE)-webui" "stringData.password" "true"; \
+	git add "$$HASH_FILE" "$$PLAIN_FILE" secrets-manifest.yaml; \
+	git commit -m "$(NAMESPACE): add basicAuth secret for PR #$(PR)" --quiet; \
+	git push; \
+	echo ""; \
+	echo "Done. PR #$(PR) now has its basicAuth secret - review and merge on GitHub."
 
 # Break-glass: grant hermes-homelab the RED-tier hermes-critical-operator
 # ClusterRole for a short, audited window - run this ONLY after Shubham has
