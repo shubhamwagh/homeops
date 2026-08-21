@@ -3,13 +3,26 @@
 # secret-app-key.sops.yaml). One instance of this broker = one (App, repo)
 # pair, per the "deploy again per integration" model in the broker's own
 # README - do not add a second repo/App here, deploy a second instance.
+#
+# Repointed 2026-08-21 to a replacement App ("Hermes Blog Agent") with
+# Contents: Read&write + Pull requests: Read&write + Checks: Read - the
+# original "Hermes Blog Reviewer" App (4669702, review-only) was deleted
+# after its permission upgrade never took effect on the live installation
+# (GitHub requires the installing account to accept a permission-upgrade
+# banner that never appeared for this same-account App+install pairing;
+# recreating fresh was faster than debugging why). This single App/broker
+# now covers both authoring (push branch + open PR) and independent review
+# - see CLAUDE.md "GitHub App Token Broker" for the full division of
+# responsibility and why branch protection (PR + 1 approval + build check
+# required on shubhamwagh/blog main) is what keeps this safe despite one
+# identity holding both capabilities.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: github-token-broker-config
   namespace: github-token-broker
 data:
-  GITHUB_APP_ID: "4669702"
-  GITHUB_APP_CLIENT_ID: "Iv23li9hUKlzmL9QSAzP"
+  GITHUB_APP_ID: "4671343"
+  GITHUB_APP_CLIENT_ID: "Iv23liijxWtL5krp0cnk"
   GITHUB_TARGET_REPO: "shubhamwagh/blog"
   EXPECTED_CALLER_USERNAME: "system:serviceaccount:hermes-agent:hermes-homelab"
