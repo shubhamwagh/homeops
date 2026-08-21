@@ -19,3 +19,9 @@ age.agekey
 .secrets-plaintext-machine
 .ntfy-credentials
 # vps/headscale/vars.yml and inventory.yml committed encrypted via SOPS
+
+# Hermes's own local working notes (project context it maintains for itself
+# in its persistent clone) - never meant to be part of this repo. A prior
+# session accidentally `git add`ed it into a commit; ignoring it here makes
+# that a no-op instead of a recurring risk.
+.hermes.md
