@@ -111,7 +111,7 @@ data:
             description: UK Vehicle Tax/MOT/Buying-Signal Report
         - IT-Tools:
             href: https://it-tools.shublab.com
-            icon: mdi-toolbox
+            icon: it-tools.png
             description: Developer utilities (encoders, converters, generators)
 
   widgets.yaml: |
