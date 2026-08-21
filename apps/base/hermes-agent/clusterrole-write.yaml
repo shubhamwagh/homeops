@@ -2,8 +2,9 @@
 # Deliberately a ClusterRole (so it's defined once, not duplicated per
 # namespace) but NEVER bound via a ClusterRoleBinding - it only takes
 # effect where a RoleBinding in rolebindings-write.yaml references it,
-# which today is exactly the 8 apps/base/* namespaces (better-booking-bot,
-# blog, car-health-check, hermes-agent, homepage, ntfy, tandoor, trek).
+# which today is exactly the 9 apps/base/* namespaces (better-booking-bot,
+# blog, car-health-check, hermes-agent, homepage, ntfy, tandoor, trek,
+# uptime-kuma).
 # Adding a new ordinary app under apps/base/ requires a matching entry in
 # rolebindings-write.yaml before Hermes gets write access there - not
 # automatic just because a new namespace exists.
