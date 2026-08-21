@@ -9,4 +9,5 @@ resources:
   - car-health-check
   - ntfy
   - it-tools
+  - uptime-kuma
   - hermes-agent

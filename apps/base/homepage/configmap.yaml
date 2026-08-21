@@ -113,6 +113,10 @@ data:
             href: https://it-tools.shublab.com
             icon: it-tools.png
             description: Developer utilities (encoders, converters, generators)
+        - Uptime Kuma:
+            href: https://uptime.shublab.com
+            icon: uptime-kuma.png
+            description: Status page and uptime monitoring
 
   widgets.yaml: |
     - kubernetes:
