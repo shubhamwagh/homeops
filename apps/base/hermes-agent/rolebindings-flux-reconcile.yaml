@@ -1,0 +1,175 @@
+# Namespace-scoped grants of hermes-operator-flux-reconcile
+# (clusterrole-flux-reconcile.yaml) - patch on Kustomization/HelmRelease
+# ONLY, nothing else in these otherwise fully-protected namespaces. One
+# entry per namespace that currently holds a Kustomization or HelmRelease,
+# per `flux get kustomizations -A` / `flux get helmreleases -A`:
+# flux-system (Kustomizations) + cert-manager, cnpg-system, crowdsec,
+# kube-system, longhorn-system, monitoring, reflector, reloader, renovate,
+# traefik, vaultwarden (HelmReleases).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: flux-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: cert-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: cnpg-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: crowdsec
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: longhorn-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: reflector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: reloader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: renovate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: traefik
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-flux-reconcile
+  namespace: vaultwarden
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-flux-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent

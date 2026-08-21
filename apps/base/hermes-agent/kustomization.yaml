@@ -5,6 +5,11 @@ resources:
   - serviceaccount.yaml
   - clusterrole.yaml
   - clusterrolebinding.yaml
+  - clusterrole-write.yaml
+  - rolebindings-write.yaml
+  - clusterrole-flux-reconcile.yaml
+  - rolebindings-flux-reconcile.yaml
+  - admission-secret-guard.yaml
   - serviceaccount-critical.yaml
   - clusterrole-critical.yaml
   - elevation-revoker.yaml
@@ -18,10 +23,14 @@ resources:
   - secret-webui-auth-plaintext.sops.yaml
   - ingress.yaml
 # High-autonomy operator tier (see CLAUDE.md "Hermes Autonomy Policy").
-# hermes-operator (bound) covers ordinary GREEN/YELLOW write access to
-# workload resources; hermes-critical-operator (defined, never bound by
-# default) covers RED-tier destructive ops, activated only via
-# `make hermes-elevate` after explicit approval. Still zero Secrets access,
+# hermes-operator-read (ClusterRole+ClusterRoleBinding) is cluster-wide
+# observation ONLY. Ordinary write access (hermes-operator-write) and the
+# Flux reconcile exception (hermes-operator-flux-reconcile) are ClusterRoles
+# bound ONLY via namespace-scoped RoleBindings (rolebindings-write.yaml,
+# rolebindings-flux-reconcile.yaml) - write access is never cluster-wide.
+# hermes-critical-operator (defined, never bound by default) covers
+# RED-tier destructive ops, activated only via `make hermes-elevate` after
+# explicit approval - unchanged by this redesign. Still zero Secrets access,
 # zero exec/attach/port-forward, zero node/host access, zero SSH - always,
 # elevated or not. Model provider (ANTHROPIC_API_KEY / OPENAI_API_KEY)
 # intentionally not set - decide and add via `sops` later.

@@ -1,0 +1,115 @@
+# Namespace-scoped grants of hermes-operator-write (clusterrole-write.yaml)
+# to hermes-homelab - one per apps/base/* namespace. This list must match
+# apps/base/*/namespace.yaml exactly; a new ordinary app under apps/base/
+# needs its own entry here before Hermes gets write access to it.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: better-booking-bot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: blog
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: car-health-check
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: hermes-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: ntfy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: tandoor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-operator-write
+  namespace: trek
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hermes-operator-write
+subjects:
+  - kind: ServiceAccount
+    name: hermes-homelab
+    namespace: hermes-agent

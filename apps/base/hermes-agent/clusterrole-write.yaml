@@ -1,0 +1,71 @@
+# hermes-operator-write: write access to ORDINARY workload resources only.
+# Deliberately a ClusterRole (so it's defined once, not duplicated per
+# namespace) but NEVER bound via a ClusterRoleBinding - it only takes
+# effect where a RoleBinding in rolebindings-write.yaml references it,
+# which today is exactly the 8 apps/base/* namespaces (better-booking-bot,
+# blog, car-health-check, hermes-agent, homepage, ntfy, tandoor, trek).
+# Adding a new ordinary app under apps/base/ requires a matching entry in
+# rolebindings-write.yaml before Hermes gets write access there - not
+# automatic just because a new namespace exists.
+#
+# No get/list/watch here on purpose - those are already granted cluster-wide
+# by hermes-operator-read; RBAC permissions are additive, so duplicating
+# read verbs here would be redundant, not additionally restrictive.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hermes-operator-write
+rules:
+  # Pods: delete only - a "restart" is a delete, the owning controller
+  # recreates it. Hermes never creates bare unmanaged Pods directly.
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs: [delete]
+
+  - apiGroups: [""]
+    resources:
+      - services
+      - configmaps
+    verbs: [create, update, patch, delete]
+
+  # Deployments/StatefulSets/DaemonSets get full ordinary write access
+  # (+ /scale). ReplicaSets stay delete/patch only - Deployments own them;
+  # direct create is unusual.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+    verbs: [create, update, patch, delete]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments/scale
+      - statefulsets/scale
+    verbs: [update, patch]
+  - apiGroups: ["apps"]
+    resources:
+      - replicasets
+    verbs: [patch, delete]
+
+  # Jobs/CronJobs are meant to be created directly (unlike bare Pods)
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: [create, update, patch, delete]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: [create, update, patch, delete]
+
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: [create, update, patch, delete]
+
+# Not granted here, ever: secrets, PVC/PV, StorageClasses, Namespaces,
+# Longhorn, RBAC, CRDs, node/host access, ingressclasses, networkpolicies -
+# same RED-tier exclusions as before, now enforced by this role simply
+# never containing them rather than by hoping a namespace boundary helps.

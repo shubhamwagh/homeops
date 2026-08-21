@@ -1,20 +1,16 @@
-# hermes-operator: Hermes' normal daily SRE authority (GREEN/YELLOW tier per
-# CLAUDE.md "Hermes Autonomy Policy"). Broad but explicitly enumerated -
-# ordinary application/workload resources get real write access; anything
-# with irreversible blast radius (Secrets, PVC/PV, Namespaces, RBAC, CRDs,
-# node/host access) stays out of this role entirely - those are RED-tier,
-# gated behind the separate hermes-critical-operator break-glass role
-# (see clusterrole-critical.yaml), never bound to this ServiceAccount by
-# default. No wildcard resources or verbs anywhere in this file.
+# hermes-operator-read: cluster-wide OBSERVATION only. Every resource here
+# is get/list/watch (or get/list for metrics.k8s.io, which has no watch)
+# regardless of namespace - this is the visibility layer, not the write
+# layer. Write access for ordinary workloads lives in a separate ClusterRole
+# (clusterrole-write.yaml) bound only via namespace-scoped RoleBindings
+# (rolebindings-write.yaml), not this ClusterRoleBinding - see CLAUDE.md
+# "Hermes Autonomy Policy" for why cluster-wide write access was removed
+# from this role. No wildcard resources or verbs anywhere in this file.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: hermes-operator
+  name: hermes-operator-read
 rules:
-  # Core API - read broadly, write only what's explicitly ordinary/reversible.
-  # No Secrets. No PVC/PV writes (RED). No Namespace writes (RED). Pods:
-  # delete only (a "restart" is a delete - the owning controller recreates
-  # it; Hermes never creates bare unmanaged Pods directly).
   - apiGroups: [""]
     resources:
       - nodes
@@ -22,69 +18,41 @@ rules:
       - events
       - persistentvolumeclaims
       - persistentvolumes
-    verbs: [get, list, watch]
-  - apiGroups: [""]
-    resources:
       - pods
       - pods/log
-    verbs: [get, list, watch, delete]
-  - apiGroups: [""]
-    resources:
       - services
       - configmaps
-    verbs: [get, list, watch, create, update, patch, delete]
-  - apiGroups: [""]
-    resources:
       - endpoints
     verbs: [get, list, watch]
 
-  # apps - workload controllers. Deployments/StatefulSets/DaemonSets get full
-  # ordinary write access (+ /scale). ReplicaSets stay delete/patch only -
-  # Deployments own them; direct create is unusual.
   - apiGroups: ["apps"]
     resources:
       - deployments
       - statefulsets
       - daemonsets
-    verbs: [get, list, watch, create, update, patch, delete]
-  - apiGroups: ["apps"]
-    resources:
-      - deployments/scale
-      - statefulsets/scale
-    verbs: [get, update, patch]
-  - apiGroups: ["apps"]
-    resources:
       - replicasets
-    verbs: [get, list, watch, patch, delete]
+    verbs: [get, list, watch]
 
-  # batch - jobs/cronjobs are meant to be created directly (unlike bare Pods)
   - apiGroups: ["batch"]
     resources:
       - jobs
       - cronjobs
-    verbs: [get, list, watch, create, update, patch, delete]
+    verbs: [get, list, watch]
 
-  # networking - ingresses are ordinary app config; ingressclasses/
-  # networkpolicies stay read-only (shared/security-adjacent, not
-  # "ordinary application" resources)
   - apiGroups: ["networking.k8s.io"]
     resources:
       - ingresses
-    verbs: [get, list, watch, create, update, patch, delete]
-  - apiGroups: ["networking.k8s.io"]
-    resources:
       - ingressclasses
       - networkpolicies
     verbs: [get, list, watch]
 
-  # autoscaling - HPAs, where used
   - apiGroups: ["autoscaling"]
     resources:
       - horizontalpodautoscalers
-    verbs: [get, list, watch, create, update, patch, delete]
+    verbs: [get, list, watch]
 
-  # storage - stays fully read-only. Deleting/modifying PVCs, PVs, or
-  # StorageClasses is RED-tier regardless of how routine it looks.
+  # Storage - read-only. Writing PVCs/PVs/StorageClasses is RED-tier
+  # regardless of how routine it looks.
   - apiGroups: ["storage.k8s.io"]
     resources:
       - storageclasses
@@ -93,32 +61,31 @@ rules:
       - volumeattachments
     verbs: [get, list, watch]
 
-  # metrics-server - resource utilisation
   - apiGroups: ["metrics.k8s.io"]
     resources:
       - nodes
       - pods
     verbs: [get, list]
 
-  # Flux - read + patch only (patch covers reconcile-now via the
-  # reconcile.fluxcd.io/requestedAt annotation, and suspend/resume via
-  # spec.suspend) - Hermes doesn't create new top-level Kustomization/
-  # HelmRelease objects directly; new apps go through HomeOps Git, which
-  # the existing base kustomization.yaml already picks up automatically.
+  # Flux - read-only here. The narrow `patch` capability (reconcile-now /
+  # suspend / resume) lives in clusterrole-flux-reconcile.yaml, bound only
+  # in the specific namespaces that actually hold a Kustomization or
+  # HelmRelease - never cluster-wide, never bundled with general write
+  # access to those namespaces.
   - apiGroups: ["helm.toolkit.fluxcd.io"]
     resources:
       - helmreleases
-    verbs: [get, list, watch, patch]
+    verbs: [get, list, watch]
   - apiGroups: ["kustomize.toolkit.fluxcd.io"]
     resources:
       - kustomizations
-    verbs: [get, list, watch, patch]
+    verbs: [get, list, watch]
   - apiGroups: ["source.toolkit.fluxcd.io"]
     resources:
       - gitrepositories
       - helmrepositories
       - helmcharts
-    verbs: [get, list, watch, patch]
+    verbs: [get, list, watch]
 
   # Longhorn - read-only. Deleting/modifying volumes, replicas, backups,
   # or recurring jobs is RED-tier (storage/data-safety), full stop.
@@ -143,9 +110,7 @@ rules:
       - ciliuml2announcementpolicies
     verbs: [get, list, watch]
 
-  # Traefik - IngressRoute/Middleware read-only for now (platform-adjacent);
-  # ordinary apps in this repo route through core Ingress, which is writable
-  # above
+  # Traefik - read-only (platform-adjacent CRDs)
   - apiGroups: ["traefik.io"]
     resources:
       - ingressroutes
@@ -166,8 +131,7 @@ rules:
     verbs: [get, list, watch]
 
 # Explicitly NOT granted anywhere in this role: secrets (any apiGroup), any
-# write verb on PVC/PV/StorageClass/Namespace/Longhorn/CRDs, pods/exec,
-# pods/attach, pods/portforward, serviceaccounts/token, any RBAC resource,
-# certificatesigningrequests/approval, or any cluster-admin aggregation.
-# All of that is RED-tier - see clusterrole-critical.yaml, which is never
-# bound to this ServiceAccount by default.
+# write verb whatsoever, pods/exec, pods/attach, pods/portforward,
+# serviceaccounts/token, any RBAC resource, certificatesigningrequests/
+# approval, or any cluster-admin aggregation. All write access - ordinary
+# or critical - lives in other, more narrowly-bound roles.

@@ -1,0 +1,28 @@
+# hermes-operator-flux-reconcile: the ONE narrow write capability that
+# reaches into otherwise fully-protected platform namespaces - patch on
+# Kustomization/HelmRelease objects only (covers reconcile-now via the
+# reconcile.fluxcd.io/requestedAt annotation, and suspend/resume via
+# spec.suspend). Nothing else about those namespaces is touched: no pod,
+# deployment, configmap, or any other write access comes with this.
+#
+# Bound via rolebindings-flux-reconcile.yaml in exactly the namespaces that
+# actually hold a Kustomization or HelmRelease today: flux-system (all 4
+# Kustomizations) plus cert-manager, cnpg-system, crowdsec, kube-system,
+# longhorn-system, monitoring, reflector, reloader, renovate, traefik,
+# vaultwarden (each holds exactly one HelmRelease). HelmReleases are NOT
+# centralised in flux-system in this repo - each lives beside the release
+# it manages - so this list must be kept in sync with `flux get helmreleases
+# -A` / `flux get kustomizations -A` if that ever changes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hermes-operator-flux-reconcile
+rules:
+  - apiGroups: ["kustomize.toolkit.fluxcd.io"]
+    resources:
+      - kustomizations
+    verbs: [patch]
+  - apiGroups: ["helm.toolkit.fluxcd.io"]
+    resources:
+      - helmreleases
+    verbs: [patch]
