@@ -60,11 +60,13 @@ RUN set -eux; \
 # sops - checksum-verified against upstream's published .sha256
 RUN set -eux; \
     ARCH="$(dpkg --print-architecture)"; \
-    curl -fsSLo /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}"; \
-    curl -fsSLo /tmp/sops.checksums.txt "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.checksums.txt"; \
-    grep "sops-v${SOPS_VERSION}.linux.${ARCH}$" /tmp/sops.checksums.txt | sha256sum -c -; \
+    cd /tmp; \
+    curl -fsSLO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}"; \
+    curl -fsSLO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.checksums.txt"; \
+    grep "sops-v${SOPS_VERSION}.linux.${ARCH}$" "sops-v${SOPS_VERSION}.checksums.txt" | sha256sum -c -; \
+    mv "sops-v${SOPS_VERSION}.linux.${ARCH}" /usr/local/bin/sops; \
     chmod +x /usr/local/bin/sops; \
-    rm -f /tmp/sops.checksums.txt
+    rm -f /tmp/sops-v*
 
 # helm - pinned-version release tarball over HTTPS from get.helm.sh
 RUN set -eux; \
