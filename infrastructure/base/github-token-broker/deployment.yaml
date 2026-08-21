@@ -22,6 +22,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 10000
         runAsGroup: 10000
+        fsGroup: 10000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -62,4 +63,4 @@ spec:
         - name: app-key
           secret:
             secretName: github-app-private-key
-            defaultMode: 0400
+            defaultMode: 0440
