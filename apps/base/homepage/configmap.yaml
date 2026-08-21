@@ -113,6 +113,10 @@ data:
             href: https://it-tools.shublab.com
             icon: it-tools.png
             description: Developer utilities (encoders, converters, generators)
+        - Mailpit:
+            href: https://mailpit.shublab.com
+            icon: mdi-email
+            description: Dev SMTP catch-all & email preview
 
   widgets.yaml: |
     - kubernetes:
