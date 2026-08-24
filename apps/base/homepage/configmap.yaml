@@ -84,6 +84,23 @@ data:
             href: https://grafana.shublab.com
             icon: grafana.png
             description: Dashboards & Metrics
+            widget:
+              type: customapi
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/query?query=round(avg(max%20by%20(instance)%20(node_hwmon_temp_celsius%7Bchip%3D~%22platform_coretemp.%2A%22%7D))%2C0.1)
+              refreshInterval: 30000
+              mappings:
+                - field: "data.result.0.value.1"
+                  label: Avg Node Temp
+                  format: text
+                  suffix: "°C"
+        - Uptime Kuma:
+            href: https://uptime-kuma.shublab.com
+            icon: mdi-heart-pulse
+            description: Homelab status monitoring
+            widget:
+              type: uptimekuma
+              url: https://uptime-kuma.shublab.com
+              slug: homelab
 
     - Applications:
         - SearXNG:
@@ -126,14 +143,6 @@ data:
             href: https://hermes.shublab.com
             icon: mdi-robot
             description: Self-hosted AI homelab agent
-        - Uptime Kuma:
-            href: https://uptime-kuma.shublab.com
-            icon: mdi-heart-pulse
-            description: Homelab status monitoring
-            widget:
-              type: uptimekuma
-              url: https://uptime-kuma.shublab.com
-              slug: homelab
 
   widgets.yaml: |
     - kubernetes:
