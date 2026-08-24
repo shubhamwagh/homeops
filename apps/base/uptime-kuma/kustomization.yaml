@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
+  - secret-uptime-kuma-admin-plaintext.sops.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
