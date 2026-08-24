@@ -1,0 +1,32 @@
+# Umami's own domain (umami.shublab.com) is deliberately private (LAN/
+# Tailscale-only, per the admin dashboard) - but the TRACKING SCRIPT that
+# real public blog visitors' browsers fetch cannot live there: it resolves
+# to a private LAN IP, which Chrome's Private Network Access policy blocks
+# from a public page, and is simply unroutable for anyone off the LAN
+# regardless. Umami's own documented fix for this is a reverse proxy under
+# the tracked site's own (already-public) domain - so this rides on
+# blog.shublab.com/stats/* instead, entirely within the cluster, no
+# Cloudflare DNS/proxy-status change needed and umami.shublab.com stays
+# private-only.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: umami-blog-proxy
+  namespace: umami
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`blog.shublab.com`) && PathPrefix(`/stats`)
+      kind: Rule
+      middlewares:
+        - name: umami-strip-prefix
+          namespace: umami
+        - name: security-headers
+          namespace: traefik
+      services:
+        - name: umami
+          namespace: umami
+          port: 3000
+  tls:
+    secretName: shublab-wildcard-tls

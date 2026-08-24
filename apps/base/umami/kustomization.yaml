@@ -8,3 +8,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - middleware-stripprefix.yaml
+  - ingressroute-blog-proxy.yaml
