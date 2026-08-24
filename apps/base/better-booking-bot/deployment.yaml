@@ -39,6 +39,17 @@ spec:
           env:
             - name: CONFIG_PATH
               value: /data/config.yaml
+            # Email copy of booking outcomes into Mailpit's web inbox, alongside
+            # whatever ntfy config lives in better-booking-bot-creds. Not a
+            # secret - Mailpit accepts anything, no auth/TLS.
+            - name: SMTP_HOST
+              value: mailpit.mailpit.svc.cluster.local
+            - name: SMTP_PORT
+              value: "1025"
+            - name: MAIL_FROM
+              value: better-booking-bot@homelab.local
+            - name: MAIL_TO
+              value: shubham@homelab.local
           volumeMounts:
             - name: data
               mountPath: /data
