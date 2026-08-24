@@ -21,11 +21,67 @@ spec:
     remediation:
       retries: 3
   values:
+    # Dedicated identity (2026-08-24) so Renovate can mint a GitHub App
+    # token from github-homeops-broker instead of authoring PRs under a
+    # personal PAT - that made every Renovate PR permanently unmergeable
+    # (branch protection blocks self-approval, no second human account
+    # exists to review them). Never the shared `default` SA - the broker's
+    # TokenReview allowlist checks this exact ServiceAccount identity.
+    serviceAccount:
+      create: true
+      name: renovate-token-fetcher
+
+    extraVolumes:
+      - name: shared-token
+        emptyDir: {}
+
+    extraVolumeMounts:
+      - name: shared-token
+        mountPath: /shared
+        readOnly: true
+
     cronjob:
       schedule: "0 2 * * *"
       concurrencyPolicy: Forbid
       successfulJobsHistoryLimit: 3
       failedJobsHistoryLimit: 3
+      # Mints a fresh token per run via github-homeops-broker's TokenReview
+      # flow (own SA token in, short-lived GitHub App installation token
+      # out) and writes it to a shared emptyDir - never a static credential
+      # in a Secret. stdlib-only (matches the broker's own minimal-
+      # dependency philosophy), no pip install needed in the init container.
+      initContainers:
+        - name: fetch-homeops-token
+          image: python:3.13-slim
+          command: ["python3", "-c"]
+          args:
+            - |
+              import json, os, urllib.request
+              with open("/var/run/secrets/kubernetes.io/serviceaccount/token") as f:
+                  sa_token = f.read().strip()
+              req = urllib.request.Request(
+                  "http://github-homeops-broker.github-homeops-broker.svc.cluster.local/v1/token",
+                  method="POST",
+                  headers={"Authorization": f"Bearer {sa_token}"},
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  data = json.load(resp)
+              with open("/shared/token", "w") as f:
+                  f.write(data["token"])
+              os.chmod("/shared/token", 0o600)
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: shared-token
+              mountPath: /shared
+      # Runs in the SAME shell session as `renovate` (chart wraps both in
+      # one /bin/bash -c script), so this export is visible to it.
+      preCommand: |
+        export RENOVATE_TOKEN="$(cat /shared/token)"
 
     renovate:
       config: |
@@ -41,6 +97,7 @@ spec:
           "separateMajorMinor": true,
           "separateMinorPatch": false,
           "labels": ["dependencies", "renovate"],
+          "reviewers": ["shubhamwagh"],
           "flux": {
             "managerFilePatterns": [
               "/(^|/)clusters\\/staging\\/flux-system\\/gotk-components\\.ya?ml$/"
@@ -97,9 +154,11 @@ spec:
       - name: LOG_LEVEL
         value: info
 
-    envFrom:
-      - secretRef:
-          name: renovate-github-token
+    # RENOVATE_TOKEN now comes from cronjob.preCommand (fresh per run via
+    # github-homeops-broker) - see above. The old renovate-github-token
+    # PAT secret is no longer wired in; the actual GitHub PAT should be
+    # revoked once this is confirmed working (secret file left in place
+    # for now, not referenced by anything).
 
     resources:
       requests:

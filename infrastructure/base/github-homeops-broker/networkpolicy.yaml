@@ -1,10 +1,14 @@
-# Only pods in the hermes-agent namespace may even open a connection to
-# this broker's port - defense in depth alongside the TokenReview identity
-# check the broker itself performs. No egress rules here on purpose:
-# Cilium only enforces default-deny for a traffic direction once a policy
-# defines rules for it, so leaving `egress` unset keeps the broker's
-# outbound access (GitHub API, kube-apiserver for TokenReview, DNS) fully
-# open while ingress becomes strictly allow-listed.
+# Only pods in the hermes-agent or renovate namespaces may even open a
+# connection to this broker's port - defense in depth alongside the
+# TokenReview identity check the broker itself performs (which further
+# restricts by exact ServiceAccount, not just namespace). renovate added
+# 2026-08-24 so self-hosted Renovate can mint tokens under its own
+# dedicated ServiceAccount (renovate-token-fetcher), same as Hermes. No
+# egress rules here on purpose: Cilium only enforces default-deny for a
+# traffic direction once a policy defines rules for it, so leaving
+# `egress` unset keeps the broker's outbound access (GitHub API,
+# kube-apiserver for TokenReview, DNS) fully open while ingress becomes
+# strictly allow-listed.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -16,6 +20,8 @@ spec:
     - fromEndpoints:
         - matchLabels:
             "k8s:io.kubernetes.pod.namespace": hermes-agent
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": renovate
       toPorts:
         - ports:
             - port: "8080"
