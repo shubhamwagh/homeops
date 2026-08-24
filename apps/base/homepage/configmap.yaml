@@ -75,8 +75,9 @@ data:
             icon: vaultwarden.png
             description: Password Manager
         - CrowdSec:
+            href: https://grafana.shublab.com/d/hjmZdB4nk/crowdsec-security-engines-overview
             icon: crowdsec.png
-            description: Intrusion Detection
+            description: Intrusion Detection (via Grafana - CrowdSec itself has no web UI)
 
     - Monitoring:
         - Grafana:
@@ -125,6 +126,14 @@ data:
             href: https://hermes.shublab.com
             icon: mdi-robot
             description: Self-hosted AI homelab agent
+        - Uptime Kuma:
+            href: https://uptime-kuma.shublab.com
+            icon: mdi-heart-pulse
+            description: Homelab status monitoring
+            widget:
+              type: uptimekuma
+              url: https://uptime-kuma.shublab.com
+              slug: homelab
 
   widgets.yaml: |
     - kubernetes:
