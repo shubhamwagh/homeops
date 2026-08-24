@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - secret.sops.yaml
+  - secret-umami-admin-plaintext.sops.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
