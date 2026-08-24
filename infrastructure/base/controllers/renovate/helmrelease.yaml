@@ -68,7 +68,14 @@ spec:
                   data = json.load(resp)
               with open("/shared/token", "w") as f:
                   f.write(data["token"])
-              os.chmod("/shared/token", 0o600)
+              # World-readable, not 0600: the init container (UID 10000) and
+              # the renovate image's main container run as different UIDs,
+              # and there's no shared fsGroup here. Fine to be readable -
+              # this emptyDir is scoped to this one pod only and the token
+              # expires in ~1h regardless (real incident 2026-08-24: 0600
+              # caused "Permission denied" reading it back, silently empty
+              # RENOVATE_TOKEN, Renovate's own "must configure a token" error).
+              os.chmod("/shared/token", 0o644)
           securityContext:
             runAsNonRoot: true
             runAsUser: 10000
