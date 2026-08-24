@@ -117,6 +117,14 @@ data:
             href: https://mailpit.shublab.com
             icon: mdi-email
             description: Dev SMTP catch-all & email preview
+        - Umami:
+            href: https://umami.shublab.com
+            icon: mdi-google-analytics
+            description: Self-hosted blog analytics
+        - Hermes Agent:
+            href: https://hermes.shublab.com
+            icon: mdi-robot
+            description: Self-hosted AI homelab agent
 
   widgets.yaml: |
     - kubernetes:
