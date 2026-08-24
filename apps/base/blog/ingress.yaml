@@ -1,0 +1,32 @@
+# Blog never had a Traefik Ingress before (2026-08-24) - it was always
+# reached via Cloudflare Tunnel straight to the blog Service, bypassing
+# Traefik entirely (by original design, not an oversight). Added when the
+# Tunnel's Public Hostname target was repointed at Traefik instead, so
+# blog gets the same centralized security-headers middleware and CrowdSec
+# log visibility (crowdsec's agent only reads Traefik's own access logs)
+# every other app already has.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blog
+  namespace: blog
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-security-headers@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - blog.shublab.com
+      secretName: shublab-wildcard-tls
+  rules:
+    - host: blog.shublab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: blog
+                port:
+                  number: 80
