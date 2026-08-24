@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: broker
-          image: ghcr.io/shubhamwagh/github-app-token-broker:530f8b8ef7ac9357edc32788c6cb04b39adb2a6a
+          image: ghcr.io/shubhamwagh/github-app-token-broker:32ebb2e561cc7ed76b27ccb95667a7076c34e592
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
