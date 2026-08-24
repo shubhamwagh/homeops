@@ -338,6 +338,21 @@ don't go looking for a homeops-side bug that isn't there.
 | Uptime Kuma | `uptime-kuma.shublab.com` | `uptime-kuma` |
 | Hermes Agent | `hermes.shublab.com` | `hermes-agent` |
 
+**CrowdSec has no web UI of its own** (it's a headless engine - LAPI + a log-reading agent, see
+Architecture above) - its homepage tile links to a Grafana dashboard instead
+(`/d/hjmZdB4nk/crowdsec-security-engines-overview`, the official "CrowdSec Overview" dashboard,
+grafana.com ID `19010`, imported via Grafana's UI 2026-08-24). **This dashboard is NOT GitOps-
+tracked** - like all Grafana dashboard customization in this repo (e.g. "star key dashboards, set
+home dashboard" from `make grafana-setup`), it lives only in Grafana's own database on its PVC.
+If Grafana's storage is ever wiped/recreated, re-import it from grafana.com ID `19010` - it needs
+no config beyond selecting the `default` Prometheus datasource (a `data-source-picker` field that
+looks pre-filled with a placeholder but is actually empty - a real gotcha hit doing this import).
+
+**Uptime Kuma's homepage tile shows a live summary widget** (`type: uptimekuma`, not just a link) -
+this pulls from a PUBLIC status page (`/status/homelab`, no auth needed for the widget) that must
+list every monitor you want counted in the up/down summary. New app -> new Uptime Kuma monitor
+-> also add it to the `homelab` status page's group, or it silently won't show up in that count.
+
 ## Key Versions
 
 | Component | Version |
