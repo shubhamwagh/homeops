@@ -11,4 +11,5 @@ resources:
   - it-tools
   - mailpit
   - umami
+  - uptime-kuma
   - hermes-agent

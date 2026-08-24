@@ -36,7 +36,7 @@ flowchart TB
             MONITORING["📊 Prometheus · Alertmanager · Grafana"]
         end
 
-        APPS["📦 Apps\nHomepage · Grafana · Longhorn · Vaultwarden\nSearXNG · Tandoor · Headplane · Blog · Umami"]
+        APPS["📦 Apps\nHomepage · Grafana · Longhorn · Vaultwarden\nSearXNG · Tandoor · Headplane · Blog · Umami · Uptime Kuma"]
     end
 
     VPNCLIENTS["📱 Remote Clients\nMac · iPhone  (WireGuard · 100.64.0.0/10)"]
@@ -248,6 +248,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | IT-Tools | `it-tools.shublab.com` | `it-tools` |
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Umami | `umami.shublab.com` | `umami` |
+| Uptime Kuma | `uptime-kuma.shublab.com` | `uptime-kuma` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 
