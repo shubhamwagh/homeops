@@ -14,7 +14,8 @@ Bare-metal k3s homelab — GitOps with FluxCD, SOPS+age secrets, Cilium CNI+L2LB
 flowchart TB
     subgraph internet["🌐 Internet"]
         GH["🐙 GitHub\nhomeops repo"]
-        CF["☁️ Cloudflare\n*.shublab.com → 192.168.0.2\nDNS-01 challenge"]
+        CF["☁️ Cloudflare\n*.shublab.com → 192.168.0.2 (most apps)\nDNS-01 challenge"]
+        TUNNEL["🚇 Cloudflare Tunnel\ncloudflared · blog.shublab.com ONLY\noutbound-only, no exposed router port"]
         VPS["🎯 Oracle VPS\nheadscale.shublab.com\nWireGuard coordination"]
     end
 
@@ -35,7 +36,7 @@ flowchart TB
             MONITORING["📊 Prometheus · Alertmanager · Grafana"]
         end
 
-        APPS["📦 Apps\nHomepage · Grafana · Longhorn · Vaultwarden\nSearXNG · Tandoor · Headplane"]
+        APPS["📦 Apps\nHomepage · Grafana · Longhorn · Vaultwarden\nSearXNG · Tandoor · Headplane · Blog · Umami"]
     end
 
     VPNCLIENTS["📱 Remote Clients\nMac · iPhone  (WireGuard · 100.64.0.0/10)"]
@@ -52,7 +53,9 @@ flowchart TB
     %% TLS + traffic
     CERT -- "DNS-01 API" --> CF
     CF -- "wildcard cert\n*.shublab.com" --> CERT
-    CF -- "A record\n→ 192.168.0.2" --> CILIUM
+    CF -- "A record\n→ 192.168.0.2 (most apps)" --> CILIUM
+    CF -- "proxied\n(blog only)" --> TUNNEL
+    TUNNEL -- "HTTPS :443\nHost Header + Origin Server Name\nset to blog.shublab.com" --> TRAEFIK
     CILIUM --> TRAEFIK --> APPS
     CERT --> TRAEFIK
 
@@ -71,7 +74,7 @@ flowchart TB
 
 | Flow | Path |
 | --- | --- |
-| LAN | `*.shublab.com` → Cloudflare DNS → Cilium VIP 192.168.0.2 → Traefik → service |
+| LAN (most apps) | `*.shublab.com` → Cloudflare DNS → Cilium VIP 192.168.0.2 → Traefik → service. Public DNS resolves straight to this private IP, so it's unroutable off-LAN/off-tailnet by design |
 | Public (blog only) | `blog.shublab.com` → Cloudflare Tunnel (`cloudflared`, no exposed router port) → Traefik → blog/umami-proxy service. The one exception to the LAN-only pattern above - see `CLAUDE.md`'s "Cloudflare Tunnel" section for the exact dashboard config this needs |
 | Remote | Client → Headscale VPS (key exchange) → WireGuard P2P → node1 → subnet route → service |
 | GitOps | git push → Flux polls GitHub → decrypt SOPS secrets → apply HelmReleases (~1 min) |
