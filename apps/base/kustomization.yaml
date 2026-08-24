@@ -10,4 +10,5 @@ resources:
   - ntfy
   - it-tools
   - mailpit
+  - umami
   - hermes-agent

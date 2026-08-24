@@ -243,6 +243,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 | IT-Tools | `it-tools.shublab.com` | `it-tools` |
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
+| Umami | `umami.shublab.com` | `umami` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 
