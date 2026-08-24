@@ -72,6 +72,7 @@ flowchart TB
 | Flow | Path |
 | --- | --- |
 | LAN | `*.shublab.com` → Cloudflare DNS → Cilium VIP 192.168.0.2 → Traefik → service |
+| Public (blog only) | `blog.shublab.com` → Cloudflare Tunnel (`cloudflared`, no exposed router port) → Traefik → blog/umami-proxy service. The one exception to the LAN-only pattern above - see `CLAUDE.md`'s "Cloudflare Tunnel" section for the exact dashboard config this needs |
 | Remote | Client → Headscale VPS (key exchange) → WireGuard P2P → node1 → subnet route → service |
 | GitOps | git push → Flux polls GitHub → decrypt SOPS secrets → apply HelmReleases (~1 min) |
 | TLS | cert-manager → Cloudflare DNS-01 → Let's Encrypt → wildcard cert → auto-renew |
