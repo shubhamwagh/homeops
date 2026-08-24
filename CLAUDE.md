@@ -44,7 +44,8 @@ make secrets-plaintext-machine  # regenerate .secrets-plaintext-machine (raw mac
 - **SOPS + age** - all secrets committed as `*.sops.yaml`, decrypted by Flux using `sops-age` k8s Secret
 - **CRD ordering** - `infrastructure` (HelmReleases, wait:true) → `infrastructure-config` (CRD-dependent) → `apps`
 - **TLS** - Let's Encrypt wildcard `*.shublab.com` via cert-manager + Cloudflare DNS-01. Reflector syncs secret across all namespaces.
-- **Renovate** - daily 2am PRs, repo=shubhamwagh/homeops, token in `renovate-github-token` secret
+- **Renovate** - daily 2am PRs, repo=shubhamwagh/homeops, authenticates via `github-homeops-broker` under its own dedicated ServiceAccount (`renovate-token-fetcher`) - see "GitHub App Token Broker #2" below. The old `renovate-github-token` PAT secret is unreferenced (2026-08-24), kept only until formally revoked on GitHub.
+- **Most apps are LAN/Tailscale-only by design** - their public DNS record resolves directly to the private Traefik LB IP (`192.168.0.2`), so anyone off the LAN/tailnet simply gets an unroutable address. `blog.shublab.com` is the one deliberately public exception - see "Cloudflare Tunnel" below for how it actually reaches the cluster, which is NOT the same path as everything else.
 
 ## Project Structure
 
@@ -63,7 +64,7 @@ homeops/
 │   └── apps.yaml                   # dependsOn: infrastructure + infrastructure-config
 ├── infrastructure/
 │   ├── base/
-│   │   ├── networking/             # cilium, traefik, cert-manager (+ cloudflare secret)
+│   │   ├── networking/             # cilium, traefik, cert-manager (+ cloudflare secret), cloudflared (blog.shublab.com tunnel only - see "Cloudflare Tunnel" below)
 │   │   ├── storage/                # longhorn (+ servicemonitor, recurring-jobs)
 │   │   ├── monitoring/             # kube-prometheus-stack, metrics-server
 │   │   ├── controllers/            # reloader, renovate, reflector
@@ -92,7 +93,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 |---|---|---|
 | `grafana-admin-secret` | `monitoring` | grafana admin password |
 | `tandoor-secret` | `tandoor` | SECRET_KEY, POSTGRES_PASSWORD |
-| `renovate-github-token` | `renovate` | RENOVATE_TOKEN (GitHub PAT) |
+| `renovate-github-token` | `renovate` | RENOVATE_TOKEN (GitHub PAT) - unreferenced since 2026-08-24, see Architecture |
 | `cloudflare-api-token` | `cert-manager` | Cloudflare API token for DNS-01 |
 | `searxng-secret` | `searxng` | secret-key |
 | `trek-secret` | `trek` | ENCRYPTION_KEY, ADMIN_EMAIL, ADMIN_PASSWORD |
@@ -104,6 +105,7 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `github-app-private-key` | `github-token-broker` | GitHub App PEM for `Hermes Blog Reviewer` (App 4669702, `shubhamwagh/blog` only) - never read by Hermes |
 | `hermes-agent-webui-auth` | `hermes-agent` | htpasswd (Traefik basic auth) |
 | `umami-secret` | `umami` | DATABASE_URL (postgres, shared `postgres` cluster, own `umami` DB/role), APP_SECRET |
+| `umami-admin-plaintext` | `umami` | Umami's own internal admin login (not consumed by any Deployment - capture-only, see `secrets-manifest.yaml`) |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 
@@ -263,6 +265,57 @@ broker and is the actual explanation for how an earlier session pushed directly 
 own GitHub identity without going through any scoped credential - not a flaw in the broker
 design itself. If `gh auth status` ever again shows a logged-in account on the Hermes pod, that
 is unexpected and should be investigated, not used.
+
+## Cloudflare Tunnel (`blog.shublab.com` only)
+
+`infrastructure/base/networking/cloudflared/` deploys `cloudflared` (2 replicas, token-based -
+`--token $(TUNNEL_TOKEN)`, no local `config.yaml`). **The tunnel's actual routing rules
+(hostname → target service) live entirely in Cloudflare's own Zero Trust dashboard (Tunnels →
+"Published application routes"), NOT in this repo - git has zero visibility into or control over
+them.** This is the one deliberate exception to the "everything else is LAN/Tailscale-only,
+public DNS resolves straight to the private Traefik LB IP" pattern every other app in this repo
+follows - `blog.shublab.com` is the only genuinely public-facing app, reached via this tunnel
+instead of a direct private-IP DNS record.
+
+**Real incident, 2026-08-24: the tunnel originally pointed straight at the blog Service**
+(`http://blog.blog.svc.cluster.local:80`), bypassing Traefik entirely - undocumented until found
+live while wiring up Umami analytics. This meant blog got none of Traefik's centralized
+`security-headers` middleware and was invisible to CrowdSec (its agent only reads Traefik's own
+access logs - `acquisition: namespace: traefik` in `crowdsec/helmrelease.yaml`). Also meant
+`apps/base/blog/` had **no Traefik Ingress resource at all** (fixed by adding one - the same
+pattern every other `apps/base/*` app already uses).
+
+Repointing the tunnel at Traefik instead required THREE dashboard-side settings, all easy to get
+wrong (each was actually gotten wrong once during this fix, in this order):
+1. **Service URL must be `https://traefik.traefik.svc.cluster.local:443`** - not port 80
+   (Traefik has no route for `blog.shublab.com` on the `web`/HTTP entrypoint, only `websecure`),
+   and not `http://` on port 443 (mismatched scheme breaks the TLS handshake outright - `web`
+   entrypoint plain-HTTP request hitting a TLS-only port).
+2. **"HTTP Host Header"** (Additional application settings → HTTP Settings) must be explicitly
+   set to `blog.shublab.com` - defaults to null. Traefik's kubernetes Ingress provider routes
+   purely by the HTTP `Host` header, not by whatever hostname the tunnel's target URL happens to
+   use - without this, Traefik can't match any router and falls back to its own generic 404.
+3. **"Origin Server Name"** (Additional application settings → TLS) must ALSO be set to
+   `blog.shublab.com` - controls the SNI cloudflared sends during the TLS handshake, which is a
+   SEPARATE thing from the Host header above. Without it, cloudflared's ClientHello SNI is the
+   target URL's own hostname (`traefik.traefik.svc.cluster.local`), which matches no configured
+   router, so Traefik serves its own internal default certificate - which cloudflared then
+   rejects with `x509: certificate is valid for ...traefik.default, not
+   traefik.traefik.svc.cluster.local`.
+
+**The `/stats/*` reverse-proxy for Umami tracking rides on this same fixed path** -
+`apps/base/umami/ingressroute-blog-proxy.yaml` + `middleware-stripprefix.yaml` match
+`Host(blog.shublab.com) && PathPrefix(/stats)`, strip the prefix, and forward to the `umami`
+Service - see the "Cloudflare Tunnel" reasoning in those files' own comments. This is what lets
+Umami's own dashboard stay LAN/Tailscale-private (`umami.shublab.com` resolves to the private LB
+IP directly, like every other app) while its public tracking script/collector still reaches real
+blog visitors, riding on blog's own already-public domain instead of needing its own.
+
+**Debugging tip:** to check whether Traefik itself is configured correctly, independent of
+whatever the tunnel is currently doing, bypass the tunnel entirely: `curl -sk -H "Host:
+blog.shublab.com" https://192.168.0.2/`. If that returns correctly but the real public domain
+doesn't, the problem is tunnel-side (Cloudflare dashboard config), not anything in this repo -
+don't go looking for a homeops-side bug that isn't there.
 
 ## Services
 
