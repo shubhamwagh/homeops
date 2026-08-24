@@ -11,6 +11,13 @@
 # required, enforced for admins) is what actually stops this credential
 # from landing anything on main without human review - not the App's
 # permission scope, same as the blog identity's design.
+#
+# EXPECTED_CALLER_USERNAME is a comma-separated allowlist (2026-08-24): also
+# includes self-hosted Renovate's dedicated ServiceAccount so its dependency
+# PRs get a real, reviewable bot identity instead of the personal PAT it
+# used before - that made every Renovate PR permanently unmergeable, since
+# branch protection blocks self-approval and there's no second human
+# account. Every caller still gets the identical App/repo-scoped token.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -20,4 +27,4 @@ data:
   GITHUB_APP_ID: "4673696"
   GITHUB_APP_CLIENT_ID: "Iv23lizFD11cyR6PGLRL"
   GITHUB_TARGET_REPO: "shubhamwagh/homeops"
-  EXPECTED_CALLER_USERNAME: "system:serviceaccount:hermes-agent:hermes-homelab"
+  EXPECTED_CALLER_USERNAME: "system:serviceaccount:hermes-agent:hermes-homelab,system:serviceaccount:renovate:renovate-token-fetcher"

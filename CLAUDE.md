@@ -231,13 +231,31 @@ keeps it from landing anything without human review, not the App's permission sc
 
 Architecture, namespace isolation, and TokenReview-based auth are identical to the blog broker
 (own namespace `github-homeops-broker`, own ClusterRole/ClusterRoleBinding suffixed uniquely to
-avoid colliding with the blog broker's, own CiliumNetworkPolicy, same
-`EXPECTED_CALLER_USERNAME: system:serviceaccount:hermes-agent:hermes-homelab`). Get a token via
+avoid colliding with the blog broker's, own CiliumNetworkPolicy). Get a token via
 `homelab-feature-implementer`'s `scripts/get-homeops-token.sh`; the shared `homelab-pr-authoring`
 skill documents the full open-PR-and-verify flow any `homelab-*` specialist can use once it has
 a concrete, safe (GREEN/YELLOW) fix - never RED-tier changes without Shubham's prior approval,
 and never bundle an RBAC change into the same PR as an unrelated fix (see `/opt/data/memories/
 homeops.md` for why that specific mistake matters).
+
+**Second caller added 2026-08-24: self-hosted Renovate.** `EXPECTED_CALLER_USERNAME` is now a
+comma-separated allowlist (`github-app-token-broker` upstream repo updated to support this -
+every caller still gets the identical App/repo-scoped token, this only widens who may ask, never
+what they can get): `system:serviceaccount:hermes-agent:hermes-homelab,system:serviceaccount:
+renovate:renovate-token-fetcher`. **Why:** Renovate previously ran with a personal PAT
+(`renovate-github-token` secret), authoring its dependency-update PRs as `shubhamwagh` directly -
+this made every such PR permanently unmergeable, since branch protection requires an approving
+review and GitHub blocks an account from approving its own PR, with no second human account to
+do it. Renovate's CronJob (`infrastructure/base/controllers/renovate/helmrelease.yaml`) now runs
+as its own dedicated ServiceAccount (`renovate-token-fetcher`, created via the chart's
+`serviceAccount.create`/`.name` values - never the shared `default` SA) with an `initContainer`
+that calls the broker exactly like Hermes does (own projected SA token in, short-lived
+installation token out, written to a shared `emptyDir`, never a static credential) and a
+`cronjob.preCommand` that exports it as `RENOVATE_TOKEN` in the same shell session before
+`renovate` runs. The old PAT-based `envFrom: renovate-github-token` wiring is removed; the
+config's `reviewers: ["shubhamwagh"]` now actually works (previously silently unusable, same
+self-authorship reason). The old PAT itself should be revoked on GitHub once this is confirmed
+working - the Secret file is left in place, just unreferenced, not deleted.
 
 **A pre-existing, unrelated ambient `gh auth` login (broad `repo` scope, account
 `shubhamwagh`) was discovered on Hermes's pod on 2026-08-21 and removed.** It predated this
