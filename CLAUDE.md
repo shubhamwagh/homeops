@@ -353,6 +353,14 @@ this pulls from a PUBLIC status page (`/status/homelab`, no auth needed for the 
 list every monitor you want counted in the up/down summary. New app -> new Uptime Kuma monitor
 -> also add it to the `homelab` status page's group, or it silently won't show up in that count.
 
+**Real-time down-alerting is a Hermes cron, not GitOps-tracked** - `uptime-kuma-watch` polls the
+same public status-page heartbeat API every 10 minutes (`*/10 * * * *`) and pages Shubham via
+ntfy the instant a monitor reports `status: 0`. It lives only in Hermes' `/opt/data/cron/jobs.json`
+on its PVC (see `hermes-cron-setup`/`ntfy-notifications` skills on the Hermes box), same as the
+CrowdSec Grafana dashboard above - if Hermes' storage is ever wiped, recreate it via those skills.
+`homelab-platform-sre` also cross-checks this API during health reviews as corroborating evidence,
+not as the primary down-detector.
+
 ## Key Versions
 
 | Component | Version |
