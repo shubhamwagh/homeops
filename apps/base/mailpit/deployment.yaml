@@ -22,7 +22,7 @@ spec:
           # needed); SMTP listens on 1025, web UI on 8025. Web UI is gated by
           # Traefik basicAuth (see middleware-auth.yaml) - the credentials are
           # created out of band via `make hermes-secret`.
-          image: axllent/mailpit:v1.30.7
+          image: axllent/mailpit:v1.31.0
           env:
             # Accept any SMTP auth so apps can relay without real credentials.
             - name: MP_SMTP_AUTH_ACCEPT_ANY
