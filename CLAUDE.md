@@ -332,7 +332,6 @@ don't go looking for a homeops-side bug that isn't there.
 | TREK | `trek.shublab.com` | `trek` |
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
-| IT-Tools | `it-tools.shublab.com` | `it-tools` |
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Umami | `umami.shublab.com` | `umami` |
 | Uptime Kuma | `uptime-kuma.shublab.com` | `uptime-kuma` |
