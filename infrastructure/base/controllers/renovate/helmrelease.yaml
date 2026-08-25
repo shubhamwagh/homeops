@@ -52,7 +52,7 @@ spec:
       # dependency philosophy), no pip install needed in the init container.
       initContainers:
         - name: fetch-homeops-token
-          image: python:3.13-slim
+          image: python:3.14-slim
           command: ["python3", "-c"]
           args:
             - |
