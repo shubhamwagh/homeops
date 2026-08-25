@@ -8,7 +8,6 @@ resources:
   - better-booking-bot
   - car-health-check
   - ntfy
-  - it-tools
   - mailpit
   - umami
   - uptime-kuma
