@@ -139,6 +139,10 @@ data:
             href: https://hermes.shublab.com
             icon: mdi-robot
             description: Self-hosted AI homelab agent
+        - Adminer:
+            href: https://adminer.shublab.com
+            icon: mdi-database
+            description: Web DB admin client (Postgres/MySQL)
 
   widgets.yaml: |
     - kubernetes:

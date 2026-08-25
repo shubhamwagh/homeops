@@ -244,6 +244,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Tandoor | `tandoor.shublab.com` | `tandoor` |
 | TREK | `trek.shublab.com` | `trek` |
 | Better Booking Bot | `booking-bot.shublab.com` | `better-booking-bot` |
+| Adminer | `adminer.shublab.com` | `adminer` |
 | Car Health Check | `carhealth.shublab.com` | `car-health-check` |
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Umami | `umami.shublab.com` | `umami` |
