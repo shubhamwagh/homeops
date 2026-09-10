@@ -5,6 +5,8 @@ metadata:
   namespace: longhorn-system
 spec:
   name: snapshot-daily
+  groups:
+    - default
   cron: "0 2 * * *"
   task: snapshot
   retain: 7
