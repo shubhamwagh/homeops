@@ -249,6 +249,7 @@ make grafana-setup    # star key dashboards + set home dashboard
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Umami | `umami.shublab.com` | `umami` |
 | Uptime Kuma | `uptime-kuma.shublab.com` | `uptime-kuma` |
+| Pickleball Predictor | `pickleball.shublab.com` | `pickleball-predictor` |
 | Headplane | `headplane.shublab.com/admin/` | `headplane` |
 | Headscale | `headscale.shublab.com` | Oracle VPS |
 

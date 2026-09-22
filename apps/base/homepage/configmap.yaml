@@ -143,6 +143,10 @@ data:
             href: https://adminer.shublab.com
             icon: mdi-database
             description: Web DB admin client (Postgres/MySQL)
+        - Pickleball Predictor:
+            href: https://pickleball.shublab.com
+            icon: mdi-table-tennis
+            description: Oxon league court/competitive-fit predictor
 
   widgets.yaml: |
     - kubernetes:
