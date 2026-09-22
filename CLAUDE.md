@@ -82,6 +82,7 @@ homeops/
     │   ├── better-booking-bot/     # GLL/Better activity booking bot (daemon + web UI, own PVC)
     │   ├── umami/                  # self-hosted blog analytics (postgres, shared cluster)
     │   ├── uptime-kuma/             # self-hosted uptime/status monitoring (sqlite, own PVC)
+    │   ├── pickleball-predictor/   # Oxon league court/competitive-fit predictor (sqlite, own PVC, private repo)
     │   └── hermes-agent/           # self-hosted Hermes Agent, observer-only RBAC, no SSH, own PVC
     └── staging/
 ```
@@ -107,6 +108,8 @@ All secrets are `*.sops.yaml` files encrypted with age. Never commit plaintext.
 | `hermes-agent-webui-auth` | `hermes-agent` | htpasswd (Traefik basic auth) |
 | `umami-secret` | `umami` | DATABASE_URL (postgres, shared `postgres` cluster, own `umami` DB/role), APP_SECRET |
 | `umami-admin-plaintext` | `umami` | Umami's own internal admin login (not consumed by any Deployment - capture-only, see `secrets-manifest.yaml`) |
+| `pickleball-predictor-creds` | `pickleball-predictor` | SPOND_USERNAME, SPOND_PASSWORD, DUPR_USERNAME, DUPR_PASSWORD |
+| `pickleball-predictor-webui-auth` | `pickleball-predictor` | htpasswd (Traefik basic auth) - completed via `make hermes-secret`, not shipped in the opening PR |
 
 `make gitops` auto-generates and encrypts all secrets. Requires `GITHUB_TOKEN` + `CLOUDFLARE_TOKEN` in env.
 
@@ -336,6 +339,7 @@ don't go looking for a homeops-side bug that isn't there.
 | Mailpit | `mailpit.shublab.com` | `mailpit` |
 | Umami | `umami.shublab.com` | `umami` |
 | Uptime Kuma | `uptime-kuma.shublab.com` | `uptime-kuma` |
+| Pickleball Predictor | `pickleball.shublab.com` | `pickleball-predictor` |
 | Hermes Agent | `hermes.shublab.com` | `hermes-agent` |
 
 **CrowdSec has no web UI of its own** (it's a headless engine - LAPI + a log-reading agent, see

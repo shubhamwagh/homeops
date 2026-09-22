@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pickleball-predictor
+  namespace: pickleball-predictor
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pickleball-predictor
+  template:
+    metadata:
+      labels:
+        app: pickleball-predictor
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/shubhamwagh/pickleball-predictor:latest
+          envFrom:
+            - secretRef:
+                name: pickleball-predictor-creds
+          env:
+            - name: DATABASE_URL
+              value: sqlite:////data/oxon_league.db
+            - name: WEBUI_HOST
+              value: "0.0.0.0"
+            - name: WEBUI_PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pickleball-predictor-data
