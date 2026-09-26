@@ -23,7 +23,7 @@ spec:
           # OWN login form (the user enters DB host/user/pass there), so there
           # is no Traefik basicAuth middleware and no middleware-auth.yaml.
           # Exposure is LAN/Tailscale-only by design (no public use).
-          image: adminer:6.0.1-standalone
+          image: adminer:6.1.1-standalone
           ports:
             - name: http
               containerPort: 8080
